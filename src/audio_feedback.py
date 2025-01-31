@@ -1,19 +1,20 @@
 import os
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "hide"
-from pygame import time, mixer
+from pygame import mixer
 
 mixer.init()
 
-def playAudioFile(audioFile: str) -> mixer.Channel:
+"""
+    Description: Takes an audio file then plays the audio and returns 
+        the channel the audio is played on
+
+    Parameters: audioFile - The path to the audio file
+                infiniteLoop - A boolean representing if the audio should infinitely loop
+"""
+def playAudioFile(audioFile: str, infiniteLoop: bool = False) -> mixer.Channel:
+    loop = -1 if infiniteLoop else 0
+
     sound = mixer.Sound(audioFile)
-    channel = sound.play()
+    channel = sound.play(loop)
 
     return channel
-
-if __name__ == "__main__":
-    mixer.init()
-    test_sound = mixer.Sound("data/audio/test.wav")
-    status = test_sound.play()
-
-    while status.get_busy():
-        time.wait(100)
