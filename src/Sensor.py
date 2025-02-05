@@ -7,20 +7,20 @@ I2C_BUS = 1
     Opens the sensor up for communication and begins ranging
 
     Parameters: sensor_address - The address of the sensor (ex. 0x29)
-                ranging_mode - The ranging mode as a string ('SHORT', 'MEDIUM', or 'LONG')
+                ranging_mode - The ranging mode to start in
 """
-def initialize_sensor(sensor_address: int, ranging_mode: str) -> VL53L1X:
-    mode = {
-        "SHORT": 1,
-        "MEDIUM": 2,
-        "LONG": 3
-    }
+def initialize_sensor(sensor_address: int, ranging_mode: VL53L1X.VL53L1xDistanceMode) -> VL53L1X.VL53L1X:
+    sensor = VL53L1X.VL53L1X(i2c_bus=I2C_BUS, i2c_address=sensor_address)
+    sensor.open()
+    sensor.start_ranging(ranging_mode)
 
-    if mode.get(ranging_mode) is None:
-        raise Exception("Unknown ranging mode")
+    return sensor
 
-    tof = VL53L1X.VL53L1X(i2c_bus=I2C_BUS, i2c_address=sensor_address)
-    tof.open()
-    tof.start_ranging(mode.get(ranging_mode))
+"""
+    Stops ranging before closing sensor connection
 
-    return tof
+    Parameters: sensor - The VL53L1X object of the sensor being shutdown
+"""
+def shutdown_sensor(sensor: VL53L1X.VL53L1X):
+    sensor.stop_ranging()
+    sensor.close()
