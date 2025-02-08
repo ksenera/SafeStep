@@ -4,7 +4,7 @@
 * First version: 2025 - 01 - 30
 * Description: This files holds the necessary functionality to send signals to the vibration device
 """
-from gpiozero import OutputDevice
+from gpiozero import DigitalOutputDevice
 import time
 
 gpio_pin_right = 18
@@ -18,9 +18,9 @@ gpio_pin_middle = 16
 * Returns     : NULL
 """
 def startup_pulse(gpio_pin1, gpio_pin2, gpio_pin3):
-    device1 = OutputDevice(gpio_pin1)
-    device2 = OutputDevice(gpio_pin2)
-    device3 = OutputDevice(gpio_pin3)
+    device1 = DigitalOutputDevice(gpio_pin1)
+    device2 = DigitalOutputDevice(gpio_pin2)
+    device3 = DigitalOutputDevice(gpio_pin3)
     i = 0
 
     #sends a pulse of 1 second on and 1 second off 5 times can be changed depending on th pulse length we want
@@ -43,9 +43,9 @@ def startup_pulse(gpio_pin1, gpio_pin2, gpio_pin3):
 """
 
 def sleep_pulse(gpio_pin1, gpio_pin2, gpio_pin3):
-    device1 = OutputDevice(gpio_pin1)
-    device2 = OutputDevice(gpio_pin2)
-    device3 = OutputDevice(gpio_pin3)
+    device1 = DigitalOutputDevice(gpio_pin1)
+    device2 = DigitalOutputDevice(gpio_pin2)
+    device3 = DigitalOutputDevice(gpio_pin3)
 
     device1.on()
     device2.on()
@@ -66,13 +66,13 @@ def sleep_pulse(gpio_pin1, gpio_pin2, gpio_pin3):
 """
 
 def error_pulse(gpio_pin1, gpio_pin2, gpio_pin3):
-    device1 = OutputDevice(gpio_pin1)
-    device2 = OutputDevice(gpio_pin2)
-    device3 = OutputDevice(gpio_pin3)
+    device1 = DigitalOutputDevice(gpio_pin1)
+    device2 = DigitalOutputDevice(gpio_pin2)
+    device3 = DigitalOutputDevice(gpio_pin3)
     i = 0
 
     # sends a pulse of 1 second on and 3 second off 5 times can be changed depending on th pulse length we want
-    while int < 5:
+    while i < 5:
         device1.on()
         device2.on()
         device3.on()
@@ -91,7 +91,7 @@ def error_pulse(gpio_pin1, gpio_pin2, gpio_pin3):
 """
 
 def one_vibrator_pulse (gpio_pin1, timespan):
-    device1 = OutputDevice(gpio_pin1)
+    device1 = DigitalOutputDevice(gpio_pin1)
 
     device1.on()
 
@@ -108,8 +108,8 @@ def one_vibrator_pulse (gpio_pin1, timespan):
 """
 
 def two_vibrator_pulse(gpio_pin1 , gpio_pin2, timespan):
-    device1 = OutputDevice(gpio_pin1)
-    device2 = OutputDevice(gpio_pin2)
+    device1 = DigitalOutputDevice(gpio_pin1)
+    device2 = DigitalOutputDevice(gpio_pin2)
 
     device1.on()
     device2.on()
@@ -128,9 +128,9 @@ def two_vibrator_pulse(gpio_pin1 , gpio_pin2, timespan):
 """
 
 def three_vibrator_pulse(gpio_pin1 , gpio_pin2, gpio_pin3, timespan):
-    device1 = OutputDevice(gpio_pin1)
-    device2 = OutputDevice(gpio_pin2)
-    device3 = OutputDevice(gpio_pin3)
+    device1 = DigitalOutputDevice(gpio_pin1)
+    device2 = DigitalOutputDevice(gpio_pin2)
+    device3 = DigitalOutputDevice(gpio_pin3)
 
     device1.on()
     device2.on()
