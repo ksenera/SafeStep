@@ -1,4 +1,4 @@
-from Sensor import initialize_all_sensors, shutdown_all_sensors
+from Sensor import initialize_all_sensors
 from vibration_feedback import timed_vibrator_pulse
 import threading
 from time import sleep
@@ -13,8 +13,6 @@ VIBRATOR_PINS = [
     2,
     3
 ]
-
-
 task_dict = {}
 
 
@@ -35,22 +33,53 @@ def determine_vibrator(sensor_index: int, sensor_count: int) -> int:
     return VIBRATOR_PINS[vibrator_index]
 
 
+"""
+    This function is the main loop that runs on a task to constantly send 
+    a vibration to a specific device
+
+    Parameters: vibrator_gpio - the gpio pin number of the vibrator being plused
+                timespan - the timespan in seconds that the vibrator should be turned on for
+"""
 def vibrator_loop(vibrator_gpio: int, timespan: int) -> None:
     while True:
         timed_vibrator_pulse(timespan=timespan, gpio_pin1=vibrator_gpio)
         sleep(timespan)
 
 
+"""
+    This class acts like a c struct and is used as the value in the task dictionary
+    which helps keep track of running tasks
+
+    Constructor: task - the task being ran
+                 distance - the distance at the time of the task being ran
+"""
 class ThreadInfo:
     def __init__(self, task, distance):
         self.task = task
         self.distance = distance
 
 
+"""
+    This function determines the delay to use between sending pulses to vibrators
+
+    Parameters: distance - the distance reading from the tof sensor
+"""
 def determine_delay(distance: int) -> int | None:
-    pass
+    scaling = 2.5
+    if distance < OUTER_RANGE_MM:
+        value = distance / OUTER_RANGE_MM
+        return (value * scaling)
+
+    return None
 
 
+"""
+    This function handles creating and cancelling task loops that send vibrations to the
+    vibrational devices depending on the readings of the tof sensors
+
+    Parameters: vibrator_gpio - the pin number of the vibrator being turned on
+                distance - the distance read from the tof sensor
+"""
 def handle_vibrational_pulsing(vibrator_gpio, distance):
     info = task_dict.get(vibrator_gpio)
     new_delay = determine_delay(distance)
