@@ -114,9 +114,8 @@ if __name__ == "__main__":
     while True:
         for index, sensor in enumerate(sensor_list):
             distance = sensor.get_distance()
-            if distance < OUTER_RANGE_MM:
-                vibrator_gpio = determine_vibrator(index, len(sensor_list))
+            vibrator_gpio = determine_vibrator(index, len(sensor_list))
 
-                # Determine how long a vibrator should be pulsed for
-                handle_vibrational_pulsing(vibrator_gpio, distance)
+            # Determine how long a vibrator should be pulsed for
+            handle_vibrational_pulsing(vibrator_gpio, distance)
 
