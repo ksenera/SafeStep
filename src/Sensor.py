@@ -72,9 +72,9 @@ def initialize_all_sensors(ranging_mode: VL53L1X.VL53L1xDistanceMode = VL53L1X.V
                 
                 # Adjust addresses of sensors to communicate back on
                 # 0x30 through 0x38 are safe addresses for this project
-                address = 0x30 + channel
+                address = 0x30 + (channel * 2)
                 sensor.change_address(address)
-
+                sensor.close()
                 sensor_list.append(sensor)
             finally:
                 tca[channel].unlock()
@@ -82,6 +82,10 @@ def initialize_all_sensors(ranging_mode: VL53L1X.VL53L1xDistanceMode = VL53L1X.V
             # If there isn't a device on that channel release the lock
             tca[channel].unlock()
 
+    for sensor in sensor_list:
+        sensor.open()
+        sensor.start_ranging()
+        
     return sensor_list
 
 
