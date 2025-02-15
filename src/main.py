@@ -1,6 +1,7 @@
 from Sensor import initialize_all_sensors
 from vibration_feedback import timed_vibrator_pulse
-import threading
+import signal
+from multiprocessing import Process
 from time import sleep
 
 # 3 meters
@@ -9,9 +10,9 @@ OUTER_RANGE_MM = 3000
 # send fastest vibrational pulse
 INNER_RANGE_MM = 500
 VIBRATOR_PINS = [
-    1,
-    2,
-    3
+    18,
+    24,
+    25
 ]
 task_dict = {}
 
@@ -42,7 +43,7 @@ def determine_vibrator(sensor_index: int, sensor_count: int) -> int:
 """
 def vibrator_loop(vibrator_gpio: int, timespan: int) -> None:
     while True:
-        timed_vibrator_pulse(timespan=timespan, gpio_pin1=vibrator_gpio)
+        timed_vibrator_pulse(timespan=timespan / 2, gpio_pin1=vibrator_gpio)
         sleep(timespan)
 
 
@@ -88,26 +89,31 @@ def handle_vibrational_pulsing(vibrator_gpio, distance):
     if info is not None:
         # Determine if new distance requires different vibrational timing
         if determine_delay(info.distance) != new_delay:
-            info.task.cancel()
+            info.task.terminate()
             if new_delay is not None:
-                info.task = threading.Thread(target=vibrator_loop, args=[vibrator_gpio, new_delay])
+                #info.task = threading.Thread(target=vibrator_loop, args=[vibrator_gpio, new_delay])
+                info.task = Process(target=vibrator_loop, args=[vibrator_gpio, new_delay])
+                info.task.start()
             else:
                 task_dict.pop(vibrator_gpio)
     else:
         if new_delay is not None:
             # Create new task
-            task = threading.Thread(target=vibrator_loop, args=[vibrator_gpio, new_delay])
+            #task = threading.Thread(target=vibrator_loop, args=[vibrator_gpio, new_delay])
+            task = Process(target=vibrator_loop, args=[vibrator_gpio, new_delay])
             new_info = ThreadInfo(task, distance)
+            new_info.task.start()
             task_dict[vibrator_gpio] = new_info
 
 
+def cleanup_processes():
+    for key, value in task_dict:
+        value.task.terminate()
+    exit()
+
+
 if __name__ == "__main__":
-    # Project flow
-
-    # Poll sensors
-
-    # If distance of object is within range
-        # Send vibrational feedback
+    signal.signal(signal.SIGINT, cleanup_processes)
     
     sensor_list = initialize_all_sensors()
 
@@ -118,4 +124,4 @@ if __name__ == "__main__":
 
             # Determine how long a vibrator should be pulsed for
             handle_vibrational_pulsing(vibrator_gpio, distance)
-
+            

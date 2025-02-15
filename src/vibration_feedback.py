@@ -99,6 +99,7 @@ def timed_vibrator_pulse (timespan, gpio_pin1, gpio_pin2 = None, gpio_pin3 = Non
         device1.on()
         time.sleep(timespan)
         device1.off()
+        device1.close()
 
     elif gpio_pin3 is None and gpio_pin2 is not None:
         device1 = DigitalOutputDevice(gpio_pin1)
@@ -123,5 +124,12 @@ def timed_vibrator_pulse (timespan, gpio_pin1, gpio_pin2 = None, gpio_pin3 = Non
         device1.off()
         device2.off()
         device3.off()
+
+if __name__ == "__main__":
+    devicetest = DigitalOutputDevice(24)
+
+    devicetest.close()
+
+    devicetest2 = DigitalOutputDevice(24)
 
 
