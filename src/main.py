@@ -1,8 +1,14 @@
-from Sensor import initialize_all_sensors
-from vibration_feedback import timed_vibrator_pulse
+from Sensor import initialize_all_sensors, shutdown_all_sensors
+from vibration_feedback import timed_vibrator_pulse, initializeOutputDevices, shutDownOutputDevices
 import signal
 from multiprocessing import Process
 from time import sleep
+import warnings
+from VL53L1X import VL53L1xDistanceMode
+from gpiozero import DigitalOutputDevice
+
+
+warnings.simplefilter("ignore")
 
 # 3 meters
 OUTER_RANGE_MM = 3000
@@ -17,6 +23,7 @@ VIBRATOR_PINS = [
 task_dict = {}
 
 
+
 """
     This function determines the most relevant vibrator to use depending on
     which sensor is detecting an object
@@ -24,14 +31,14 @@ task_dict = {}
     Parameters: sensor_index - the index position of the sensor in the sensor list
                 sensor_count - the number of sensors in the list
 """
-def determine_vibrator(sensor_index: int, sensor_count: int) -> int:
+def determine_vibrator(sensor_index: int, sensor_count: int, digital_devices: list[DigitalOutputDevice]) -> DigitalOutputDevice:
     # Determine which vibrator should be used
     value = (sensor_index + 1) / sensor_count
 
-    vibrator_count = len(VIBRATOR_PINS)
-    vibrator_index = round(vibrator_count * value) - 1
+    device_count = len(digital_devices)
+    device_index = round(device_count * value) - 1
 
-    return VIBRATOR_PINS[vibrator_index]
+    return digital_devices[device_index]
 
 
 """
@@ -41,9 +48,9 @@ def determine_vibrator(sensor_index: int, sensor_count: int) -> int:
     Parameters: vibrator_gpio - the gpio pin number of the vibrator being plused
                 timespan - the timespan in seconds that the vibrator should be turned on for
 """
-def vibrator_loop(vibrator_gpio: int, timespan: int) -> None:
+def vibrator_loop(device: DigitalOutputDevice, timespan: int) -> None:
     while True:
-        timed_vibrator_pulse(timespan=timespan / 2, gpio_pin1=vibrator_gpio)
+        timed_vibrator_pulse(timespan=timespan / 2, deviceList = [device])
         sleep(timespan)
 
 
@@ -81,8 +88,8 @@ def determine_delay(distance: int) -> int | None:
     Parameters: vibrator_gpio - the pin number of the vibrator being turned on
                 distance - the distance read from the tof sensor
 """
-def handle_vibrational_pulsing(vibrator_gpio, distance):
-    info = task_dict.get(vibrator_gpio)
+def handle_vibrational_pulsing(digital_device: DigitalOutputDevice, distance):
+    info = task_dict.get(digital_device.pin)
     new_delay = determine_delay(distance)
 
     # Check for prexisting task
@@ -92,36 +99,42 @@ def handle_vibrational_pulsing(vibrator_gpio, distance):
             info.task.terminate()
             if new_delay is not None:
                 #info.task = threading.Thread(target=vibrator_loop, args=[vibrator_gpio, new_delay])
-                info.task = Process(target=vibrator_loop, args=[vibrator_gpio, new_delay])
+                info.task = Process(target=vibrator_loop, args=[digital_device, new_delay])
                 info.task.start()
             else:
-                task_dict.pop(vibrator_gpio)
+                task_dict.pop(digital_device.pin)
     else:
         if new_delay is not None:
             # Create new task
             #task = threading.Thread(target=vibrator_loop, args=[vibrator_gpio, new_delay])
-            task = Process(target=vibrator_loop, args=[vibrator_gpio, new_delay])
+            task = Process(target=vibrator_loop, args=[digital_device, new_delay])
             new_info = ThreadInfo(task, distance)
             new_info.task.start()
-            task_dict[vibrator_gpio] = new_info
+            task_dict[digital_device.pin] = new_info
 
 
 def cleanup_processes():
     for key, value in task_dict:
         value.task.terminate()
+
+    # shutDownOutputDevices()
+    # shutdown_all_sensors()
+
     exit()
 
 
 if __name__ == "__main__":
+    sensor_list = initialize_all_sensors(VL53L1xDistanceMode.LONG)
+    device_list = initializeOutputDevices(VIBRATOR_PINS)
+
     signal.signal(signal.SIGINT, cleanup_processes)
-    
-    sensor_list = initialize_all_sensors()
 
     while True:
         for index, sensor in enumerate(sensor_list):
             distance = sensor.get_distance()
-            vibrator_gpio = determine_vibrator(index, len(sensor_list))
+            print(f'Sensor[{index}]: {distance}mm')
+            digital_device = determine_vibrator(index, len(sensor_list), device_list)
 
             # Determine how long a vibrator should be pulsed for
-            handle_vibrational_pulsing(vibrator_gpio, distance)
+            handle_vibrational_pulsing(digital_device, distance)
             
