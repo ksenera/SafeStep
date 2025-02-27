@@ -1,13 +1,13 @@
 from Sensor import initialize_all_sensors, shutdown_all_sensors
 from vibration_feedback import timed_vibrator_pulse, initializeOutputDevices, shutDownOutputDevices
 import signal
-from multiprocessing import Process
+import threading
 from time import sleep
 import warnings
 from VL53L1X import VL53L1xDistanceMode
 from gpiozero import DigitalOutputDevice
 
-
+# Filters redundent output messages from gpiozero
 warnings.simplefilter("ignore")
 
 # 3 meters
@@ -20,6 +20,7 @@ VIBRATOR_PINS = [
     24,
     25
 ]
+# Holds information for threads running vibrational pulsing
 task_dict = {}
 
 
@@ -30,6 +31,7 @@ task_dict = {}
 
     Parameters: sensor_index - the index position of the sensor in the sensor list
                 sensor_count - the number of sensors in the list
+                digital_devices - the list containing the vibrator information
 """
 def determine_vibrator(sensor_index: int, sensor_count: int, digital_devices: list[DigitalOutputDevice]) -> DigitalOutputDevice:
     # Determine which vibrator should be used
@@ -47,9 +49,10 @@ def determine_vibrator(sensor_index: int, sensor_count: int, digital_devices: li
 
     Parameters: vibrator_gpio - the gpio pin number of the vibrator being plused
                 timespan - the timespan in seconds that the vibrator should be turned on for
+                event - the event associated with the thread used to signal a thread shutdown
 """
-def vibrator_loop(device: DigitalOutputDevice, timespan: int) -> None:
-    while True:
+def vibrator_loop(device: DigitalOutputDevice, timespan: int, event: threading.Event) -> None:
+    while not event.is_set():
         timed_vibrator_pulse(timespan=timespan / 2, deviceList = [device])
         sleep(timespan)
 
@@ -58,12 +61,14 @@ def vibrator_loop(device: DigitalOutputDevice, timespan: int) -> None:
     This class acts like a c struct and is used as the value in the task dictionary
     which helps keep track of running tasks
 
-    Constructor: task - the task being ran
-                 distance - the distance at the time of the task being ran
+    Constructor: new_thread - the thread created that runs the vibrational pulsing
+                 new_event - the event object used to signal an end to the thread loop
+                 distance - the distance at the time of the thread being started
 """
 class ThreadInfo:
-    def __init__(self, task, distance):
-        self.task = task
+    def __init__(self, new_thread: threading.Thread, new_event: threading.Event, distance):
+        self.thread = new_thread
+        self.event = new_event
         self.distance = distance
 
 
@@ -89,41 +94,41 @@ def determine_delay(distance: int) -> int | None:
                 distance - the distance read from the tof sensor
 """
 def handle_vibrational_pulsing(digital_device: DigitalOutputDevice, distance):
-    info = task_dict.get(digital_device.pin)
+    running_thread = task_dict.get(digital_device.pin)
     new_delay = determine_delay(distance)
 
     # Check for prexisting task
-    if info is not None:
+    if running_thread is not None:
         # Determine if new distance requires different vibrational timing
-        if determine_delay(info.distance) != new_delay:
-            info.task.terminate()
+        if determine_delay(running_thread.distance) != new_delay:
+            # Shut down the thread
+            running_thread.event.set()
+
             if new_delay is not None:
-                #info.task = threading.Thread(target=vibrator_loop, args=[vibrator_gpio, new_delay])
-                info.task = Process(target=vibrator_loop, args=[digital_device, new_delay])
-                info.task.start()
+                # Create a new thread with updated pulse duration
+                running_thread.event.clear() # Reset the event before starting a new thread with the same event
+                running_thread.thread = threading.Thread(target=vibrator_loop, args=[digital_device, new_delay, running_thread.event])
+                running_thread.thread.start()
             else:
                 task_dict.pop(digital_device.pin)
     else:
         if new_delay is not None:
             # Create new task
-            #task = threading.Thread(target=vibrator_loop, args=[vibrator_gpio, new_delay])
-            task = Process(target=vibrator_loop, args=[digital_device, new_delay])
-            new_info = ThreadInfo(task, distance)
-            new_info.task.start()
+            new_event = threading.Event()
+            new_thread = threading.Thread(target=vibrator_loop, args=[digital_device, new_delay, new_event])
+            new_info = ThreadInfo(new_thread, new_event, distance)
+            new_info.thread.start()
             task_dict[digital_device.pin] = new_info
 
 
 def cleanup_processes():
-    for key, value in task_dict:
-        value.task.terminate()
-
-    # shutDownOutputDevices()
-    # shutdown_all_sensors()
+    shutDownOutputDevices()
+    shutdown_all_sensors()
 
     exit()
 
 
-if __name__ == "__main__":
+def main():
     sensor_list = initialize_all_sensors(VL53L1xDistanceMode.LONG)
     device_list = initializeOutputDevices(VIBRATOR_PINS)
 
@@ -137,4 +142,7 @@ if __name__ == "__main__":
 
             # Determine how long a vibrator should be pulsed for
             handle_vibrational_pulsing(digital_device, distance)
-            
+
+
+if __name__ == "__main__":
+    main()
