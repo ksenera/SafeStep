@@ -23,7 +23,11 @@ VIBRATOR_PINS = [
 # Holds information for threads running vibrational pulsing
 task_dict = {}
 
+device_list = initializeOutputDevices(VIBRATOR_PINS)
 
+sensor_list = initialize_all_sensors(VL53L1xDistanceMode.LONG)
+
+# MASTERBOOLEAN = True
 
 """
     This function determines the most relevant vibrator to use depending on
@@ -106,8 +110,9 @@ def handle_vibrational_pulsing(digital_device: DigitalOutputDevice, distance):
 
             if new_delay is not None:
                 # Create a new thread with updated pulse duration
-                running_thread.event.clear() # Reset the event before starting a new thread with the same event
-                running_thread.thread = threading.Thread(target=vibrator_loop, args=[digital_device, new_delay, running_thread.event])
+                new_event = threading.Event() # Reset the event before starting a new thread with the same event
+                running_thread.thread = threading.Thread(target=vibrator_loop, args=[digital_device, new_delay, new_event])
+                running_thread.event = new_event
                 running_thread.thread.start()
             else:
                 task_dict.pop(digital_device.pin)
@@ -121,22 +126,42 @@ def handle_vibrational_pulsing(digital_device: DigitalOutputDevice, distance):
             task_dict[digital_device.pin] = new_info
 
 
-def cleanup_processes():
-    shutDownOutputDevices()
-    shutdown_all_sensors()
+def cleanup_processes(signum, frame):
+    # global MASTERBOOLEAN
+    # MASTERBOOLEAN = False
+    
+    sleep(1)
+    
+    for value in task_dict.values():
+        value.event.set()
 
+    for value in task_dict.values():
+        value.thread.join()
+
+    shutDownOutputDevices(device_list)
+    shutdown_all_sensors(sensor_list)
+    
     exit()
 
 
-def main():
-    sensor_list = initialize_all_sensors(VL53L1xDistanceMode.LONG)
-    device_list = initializeOutputDevices(VIBRATOR_PINS)
 
-    signal.signal(signal.SIGINT, cleanup_processes)
+def main():
+    #sensor_list = initialize_all_sensors(VL53L1xDistanceMode.LONG)
+    #device_list = initializeOutputDevices(VIBRATOR_PINS)
+    global sensor_list #= list(g_sensor_list)
+    global device_list #= list(g_device_list)
+
+    signal.signal(signal.SIGTSTP, cleanup_processes)
 
     while True:
         for index, sensor in enumerate(sensor_list):
+            # if MASTERBOOLEAN is False:
+            #     continue
+
             distance = sensor.get_distance()
+            if distance < 0:
+                continue
+
             print(f'Sensor[{index}]: {distance}mm')
             digital_device = determine_vibrator(index, len(sensor_list), device_list)
 
