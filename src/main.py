@@ -1,6 +1,6 @@
 from Sensor import initialize_all_sensors, shutdown_all_sensors
 from vibration_feedback import timed_vibrator_pulse, initializeOutputDevices, shutDownOutputDevices
-from Camera import camera_init_detect
+from Camera import camera_init, detect_object
 import signal
 import threading
 from time import sleep
@@ -8,6 +8,7 @@ import warnings
 from VL53L1X import VL53L1xDistanceMode
 from gpiozero import DigitalOutputDevice
 import sys
+import queue
 
 # Filters redundent output messages from gpiozero
 warnings.simplefilter("ignore")
@@ -30,6 +31,8 @@ device_list = initializeOutputDevices(VIBRATOR_PINS)
 sensor_list = initialize_all_sensors(VL53L1xDistanceMode.LONG)
 
 MASTERBOOLEAN = True
+
+detected_category_queue = queue.Queue()
 
 """
     This function determines the most relevant vibrator to use depending on
@@ -127,6 +130,8 @@ def handle_vibrational_pulsing(digital_device: DigitalOutputDevice, distance):
             new_info.thread.start()
             task_dict[digital_device.pin] = new_info
 
+def camera_thread_method():
+    camera_init(detected_category_queue)
 
 def cleanup_processes(signum, frame):
     global MASTERBOOLEAN
@@ -156,7 +161,19 @@ def main():
 
     signal.signal(signal.SIGTSTP, cleanup_processes)
 
+    #camera thread
+    camera_thread = threading.Thread(target=camera_thread_method)
+    camera_thread.daemon = True
+    camera_thread.start()
+
     while MASTERBOOLEAN:
+
+        # camera catgory queue check 
+        if not detected_category_queue.empty():
+            category = detected_category_queue.get()
+            print(f"Detected classification from camera: {category}")
+
+
         for index, sensor in enumerate(sensor_list):
             if MASTERBOOLEAN is False:
                 break

@@ -14,25 +14,25 @@ picam2 = Picamera2()
 picam2.preview_configuration.main.size=(254,254)
 camera_config = picam2.create_still_configuration({"size": (600,600)})
 
-def camera_init():
+def camera_init(detected_category_queue=None):
 
     picam2.configure(camera_config)
     picam2.start()
-    detect_object()
+    detect_object(detected_category_queue)
     picam2.stop()
     cv2.destroyAllWindows()
 
-def detect_object():
+def detect_object(detected_category_queue=None):
     #Initialize inference options for the Mediapipe object
     base_options = python.BaseOptions(model_asset_path = 'efficientdet.tflite')
     options = vision.ObjectDetectorOptions(base_options=base_options,
                                         score_threshold=0.5)
-    
+
     detector = vision.ObjectDetector.create_from_options(options)
 
     #Initialize Variables
-    last_time = 0
-    inference_time = 0
+    #last_time = 0
+    #inference_time = 0
     target = 'person'
     while True:
         #Take an image and format it
@@ -52,14 +52,6 @@ def detect_object():
         
 
         pressedKey = cv2.waitKey(30) & 0xFF
-        #Initialize Loop Variables
-        centroidx = 0
-        centroidy = 0
-        deviationx = 0
-        deviationy = 0
-        width = 0
-        height = 0
-        detected = 0
 
         #Parse through detections
         for detection in detection_result.detections:
@@ -83,15 +75,11 @@ def detect_object():
                 stop_point = (bbox.origin_x + width, bbox.origin_y + height)
                 
                 cv2.rectangle(rgb_image, start_point, stop_point, (0, 255, 0), 2)
-                start_point = list(start_point)
-                start_point[0] += 10
-                start_point[1] += 20
-                start_point = tuple(start_point)
                 
-                cv2.putText(rgb_image, category.category_name.upper(), start_point, cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                cv2.putText(rgb_image, category.category_name.upper(), (start_point[0] + 10, start_point[1] + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
-                with open("detected_target.txt", "w") as file:
-                    file.write(category.category_name)
+                if detected_category_queue is not None:
+                    detected_category_queue.put(category.category_name)
                 
                 print(category.category_name, ", with prob: ", str(round(category.score,2))
                     , "and centroid: ", str(centroidx),",",str(centroidy))
