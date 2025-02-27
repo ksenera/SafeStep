@@ -1,5 +1,6 @@
 from Sensor import initialize_all_sensors, shutdown_all_sensors
 from vibration_feedback import timed_vibrator_pulse, initializeOutputDevices, shutDownOutputDevices
+from Camera import camera_init_detect
 import signal
 import threading
 from time import sleep
