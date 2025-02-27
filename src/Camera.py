@@ -18,29 +18,32 @@ def camera_init():
 
     picam2.configure(camera_config)
     picam2.start()
+    detect_object()
+    picam2.stop()
+    cv2.destroyAllWindows()
 
+def detect_object():
     #Initialize inference options for the Mediapipe object
     base_options = python.BaseOptions(model_asset_path = 'efficientdet.tflite')
     options = vision.ObjectDetectorOptions(base_options=base_options,
                                         score_threshold=0.5)
+    
     detector = vision.ObjectDetector.create_from_options(options)
 
     #Initialize Variables
     last_time = 0
     inference_time = 0
     target = 'person'
-
-
     while True:
         #Take an image and format it
         image = picam2.capture_array()
-    #     image = cv2.rotate(image, cv2.ROTATE_180)
+        #image = cv2.rotate(image, cv2.ROTATE_180)
         rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        
+    
         #rgb_image = cv2.resize(rgb_image,(640,640))
         mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_image)
-        
-        
+    
+    
         #Perform inference and time it
         last_time = time.time()
         detection_result = detector.detect(mp_image)
@@ -100,6 +103,3 @@ def camera_init():
 
         print("Inference Time: ", str(time.time()-last_time))
         print('--------------------------------------------')
-
-    picam2.stop()
-    cv2.destroyAllWindows()
