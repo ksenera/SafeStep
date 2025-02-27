@@ -14,15 +14,15 @@ picam2 = Picamera2()
 picam2.preview_configuration.main.size=(254,254)
 camera_config = picam2.create_still_configuration({"size": (600,600)})
 
-def camera_init(detected_category_queue=None):
+def camera_init(detected_category_queue=None, sensor_distance_queue=None):
 
     picam2.configure(camera_config)
     picam2.start()
-    detect_object(detected_category_queue)
+    detect_object(detected_category_queue, sensor_distance_queue)
     picam2.stop()
     cv2.destroyAllWindows()
 
-def detect_object(detected_category_queue=None):
+def detect_object(detected_category_queue=None, sensor_distance_queue=None):
     #Initialize inference options for the Mediapipe object
     base_options = python.BaseOptions(model_asset_path = 'efficientdet.tflite')
     options = vision.ObjectDetectorOptions(base_options=base_options,
@@ -49,7 +49,10 @@ def detect_object(detected_category_queue=None):
         detection_result = detector.detect(mp_image)
         inference_time = time.time() - last_time
         
-        
+        # retrieve distances from sensor
+        sensor_distance = None
+        if sensor_distance_queue is not None and not sensor_distance_queue.empty():
+            sensor_distance = sensor_distance_queue.get()
 
         pressedKey = cv2.waitKey(30) & 0xFF
 
@@ -63,7 +66,6 @@ def detect_object(detected_category_queue=None):
                 print(str(round(category.score,2)))
                 bbox = detection.bounding_box
                 detected = 1
-                # Grab Relevant Variables
                 width = bbox.width
                 height = bbox.height
                 centroidx = bbox.origin_x + (width/2)
@@ -78,8 +80,13 @@ def detect_object(detected_category_queue=None):
                 
                 cv2.putText(rgb_image, category.category_name.upper(), (start_point[0] + 10, start_point[1] + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
-                if detected_category_queue is not None:
-                    detected_category_queue.put(category.category_name)
+                if sensor_distance is not None and sensor_distance <= 3000:
+                    if detected_category_queue is not None:
+                        detected_category_queue.put({
+                            "classification": classification,
+                            "centroid": (centroidx, centroidy),
+                            "distance": sensor_distance
+                        })
                 
                 print(category.category_name, ", with prob: ", str(round(category.score,2))
                     , "and centroid: ", str(centroidx),",",str(centroidy))
