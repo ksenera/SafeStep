@@ -123,6 +123,8 @@ def shutDownOutputDevices(device_list: list[DigitalOutputDevice]) -> None:
         device.off()
         device.close()
         
+    device_list.clear()
+        
 
 if __name__ == "__main__":
     

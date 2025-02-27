@@ -6,6 +6,7 @@ from time import sleep
 import warnings
 from VL53L1X import VL53L1xDistanceMode
 from gpiozero import DigitalOutputDevice
+import sys
 
 # Filters redundent output messages from gpiozero
 warnings.simplefilter("ignore")
@@ -27,7 +28,7 @@ device_list = initializeOutputDevices(VIBRATOR_PINS)
 
 sensor_list = initialize_all_sensors(VL53L1xDistanceMode.LONG)
 
-# MASTERBOOLEAN = True
+MASTERBOOLEAN = True
 
 """
     This function determines the most relevant vibrator to use depending on
@@ -127,8 +128,8 @@ def handle_vibrational_pulsing(digital_device: DigitalOutputDevice, distance):
 
 
 def cleanup_processes(signum, frame):
-    # global MASTERBOOLEAN
-    # MASTERBOOLEAN = False
+    global MASTERBOOLEAN
+    MASTERBOOLEAN = False
     
     sleep(1)
     
@@ -141,7 +142,7 @@ def cleanup_processes(signum, frame):
     shutDownOutputDevices(device_list)
     shutdown_all_sensors(sensor_list)
     
-    exit()
+    #sys.exit(0)
 
 
 
@@ -150,13 +151,14 @@ def main():
     #device_list = initializeOutputDevices(VIBRATOR_PINS)
     global sensor_list #= list(g_sensor_list)
     global device_list #= list(g_device_list)
+    global MASTERBOOLEAN
 
     signal.signal(signal.SIGTSTP, cleanup_processes)
 
-    while True:
+    while MASTERBOOLEAN:
         for index, sensor in enumerate(sensor_list):
-            # if MASTERBOOLEAN is False:
-            #     continue
+            if MASTERBOOLEAN is False:
+                break
 
             distance = sensor.get_distance()
             if distance < 0:
@@ -167,6 +169,9 @@ def main():
 
             # Determine how long a vibrator should be pulsed for
             handle_vibrational_pulsing(digital_device, distance)
+
+    
+    
 
 
 if __name__ == "__main__":
