@@ -10,6 +10,8 @@ from gpiozero import DigitalOutputDevice
 import sys
 import queue
 
+
+
 # Filters redundent output messages from gpiozero
 warnings.simplefilter("ignore")
 
@@ -32,6 +34,7 @@ sensor_list = initialize_all_sensors(VL53L1xDistanceMode.LONG)
 
 MASTERBOOLEAN = True
 
+sensor_distance_queue = queue.Queue()
 detected_category_queue = queue.Queue()
 
 """
@@ -131,7 +134,7 @@ def handle_vibrational_pulsing(digital_device: DigitalOutputDevice, distance):
             task_dict[digital_device.pin] = new_info
 
 def camera_thread_method():
-    camera_init(detected_category_queue)
+    camera_init(detected_category_queue, sensor_distance_queue)
 
 def cleanup_processes(signum, frame):
     global MASTERBOOLEAN
@@ -168,12 +171,6 @@ def main():
 
     while MASTERBOOLEAN:
 
-        # camera catgory queue check 
-        if not detected_category_queue.empty():
-            category = detected_category_queue.get()
-            print(f"Detected classification from camera: {category}")
-
-
         for index, sensor in enumerate(sensor_list):
             if MASTERBOOLEAN is False:
                 break
@@ -183,14 +180,20 @@ def main():
                 continue
 
             print(f'Sensor[{index}]: {distance}mm')
+            sensor_distance_queue.put(distance)
             digital_device = determine_vibrator(index, len(sensor_list), device_list)
 
             # Determine how long a vibrator should be pulsed for
             handle_vibrational_pulsing(digital_device, distance)
 
-    
-    
-
+                # camera catgory queue check 
+        if not detected_category_queue.empty():
+            detected_objects = detected_category_queue.get()
+            category = detected_objects["classification"]
+            centroid = detected_objects["centroid"]
+            distance = detected_objects["distance"]
+            print(f"Detected {category} at {centroid}, {distance} mm from sensor")
+        
 
 if __name__ == "__main__":
     main()
