@@ -7,9 +7,8 @@
 from gpiozero import DigitalOutputDevice
 import time
 
-gpio_pin_right = 18
-gpio_pin_left = 17
-gpio_pin_middle = 16
+
+defaultPinList = [18, 24, 25]
 
 """
 * Function    : startup_pulse
@@ -91,37 +90,49 @@ def error_pulse(gpio_pin1, gpio_pin2, gpio_pin3):
 * Returns     : NULL
 """
 
-def timed_vibrator_pulse (timespan, gpio_pin1, gpio_pin2 = None, gpio_pin3 = None):
+def timed_vibrator_pulse (timespan: int, deviceList: list[DigitalOutputDevice]) -> None:
 
-    if gpio_pin2 is None and gpio_pin3 is None:
-        device1 = DigitalOutputDevice(gpio_pin1)
+    for device in deviceList:
+        device.on()
+    
+    time.sleep(timespan)
 
-        device1.on()
-        time.sleep(timespan)
-        device1.off()
+    for device in deviceList:
+        device.off()
 
-    elif gpio_pin3 is None and gpio_pin2 is not None:
-        device1 = DigitalOutputDevice(gpio_pin1)
-        device2 = DigitalOutputDevice(gpio_pin2)
 
-        device1.on()
-        device2.on()
-        time.sleep(timespan)
-        device1.off()
-        device2.off()
-    elif gpio_pin3 is not None and gpio_pin2 is not None:
-        device1 = DigitalOutputDevice(gpio_pin1)
-        device2 = DigitalOutputDevice(gpio_pin2)
-        device3 = DigitalOutputDevice(gpio_pin3)
 
-        device1.on()
-        device2.on()
-        device3.on()
 
-        time.sleep(timespan)
+def initializeOutputDevices(pinList:list = None) -> list[DigitalOutputDevice]:
+    devices = []
 
-        device1.off()
-        device2.off()
-        device3.off()
+    if pinList is None:
+        pinList = defaultPinList
+
+    for pins in pinList:
+        device = DigitalOutputDevice(pins)
+        devices.append(device)
+
+    if len(devices) == 0:
+        raise Exception("Gpio Pin list empty")
+    
+    return devices
+
+def shutDownOutputDevices(device_list: list[DigitalOutputDevice]) -> None:
+    for device in device_list:
+        device.off()
+        device.close()
+        
+    device_list.clear()
+        
+
+if __name__ == "__main__":
+    
+    devicelist = initializeOutputDevices(None)
+
+    while True:
+        timed_vibrator_pulse(1, devicelist)
+        time.sleep(1)
+    
 
 

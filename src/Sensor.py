@@ -97,4 +97,5 @@ def initialize_all_sensors(ranging_mode: VL53L1X.VL53L1xDistanceMode = VL53L1X.V
 def shutdown_all_sensors(sensor_list: list[VL53L1X.VL53L1X]):
     for item in sensor_list:
         shutdown_sensor(item)
-
+    
+    sensor_list.clear()
