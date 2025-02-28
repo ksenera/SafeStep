@@ -9,6 +9,7 @@ from VL53L1X import VL53L1xDistanceMode
 from gpiozero import DigitalOutputDevice
 import sys
 import queue
+import subprocess 
 
 
 
@@ -36,6 +37,7 @@ MASTERBOOLEAN = True
 
 sensor_distance_queue = queue.Queue()
 detected_category_queue = queue.Queue()
+
 
 """
     This function determines the most relevant vibrator to use depending on
@@ -136,6 +138,9 @@ def handle_vibrational_pulsing(digital_device: DigitalOutputDevice, distance):
 def camera_thread_method():
     camera_init(detected_category_queue, sensor_distance_queue)
 
+def speak(text):
+    subprocess.run(["flite", "-voice", "rms", "-t", text])
+
 def cleanup_processes(signum, frame):
     global MASTERBOOLEAN
     MASTERBOOLEAN = False
@@ -188,11 +193,22 @@ def main():
 
                 # camera catgory queue check 
         if not detected_category_queue.empty():
-            detected_objects = detected_category_queue.get()
+            while not detected_category_queue.empty():
+                detected_objects = detected_category_queue.get()
+
             category = detected_objects["classification"]
-            centroid = detected_objects["centroid"]
+            centroidx = detected_objects["centroid"][0]
             distance = detected_objects["distance"]
-            print(f"Detected {category} at {centroid}, {distance} mm from sensor")
+            camera_width = 600 
+            if centroidx < camera_width / 2:
+                position = "left"
+            else:
+                position = "right"
+
+            print(f"Detected {category} to the {position}, {distance} mm")
+
+            audio_feedback = f"Detected {category} at {distance} mm {position}"
+            speak(audio_feedback)
         
 
 if __name__ == "__main__":
