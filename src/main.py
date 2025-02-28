@@ -193,17 +193,19 @@ def main():
 
                 # camera catgory queue check 
         if not detected_category_queue.empty():
+            detected_objects = None
             while not detected_category_queue.empty():
                 detected_objects = detected_category_queue.get()
 
-            category = detected_objects["classification"]
-            centroidx = detected_objects["centroid"][0]
-            distance = detected_objects["distance"]
-            camera_width = 600 
-            if centroidx < camera_width / 2:
-                position = "left"
-            else:
-                position = "right"
+            if detected_objects:
+                category = detected_objects["classification"]
+                centroidx = detected_objects["centroid"][0]
+                distance = detected_objects["distance"]
+                camera_width = 600 
+                if centroidx < camera_width / 2:
+                    position = "left"
+                else:
+                    position = "right"
 
             print(f"Detected {category} to the {position}, {distance} mm")
 

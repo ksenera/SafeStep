@@ -88,13 +88,13 @@ def detect_object(detected_category_queue=None, sensor_distance_queue=None):
                             "distance": sensor_distance
                         })
                 
-                print(category.category_name, ", with prob: ", str(round(category.score,2))
-                    , "and centroid: ", str(centroidx),",",str(centroidy))
-                print('deviation from center: ', str(deviationx), ",", str(deviationy))
+                #print(category.category_name, ", with prob: ", str(round(category.score,2))
+                #    , "and centroid: ", str(centroidx),",",str(centroidy))
+                #print('deviation from center: ', str(deviationx), ",", str(deviationy))
         
         cv2.imshow('livestream', rgb_image)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
-        print("Inference Time: ", str(time.time()-last_time))
-        print('--------------------------------------------')
+        #print("Inference Time: ", str(time.time()-last_time))
+        #print('--------------------------------------------')
