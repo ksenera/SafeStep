@@ -9,9 +9,11 @@ import time
 import asyncio
 
 
-defaultPinList = [18, 24, 25]
-
-
+defaultPinList = [
+    18,
+    24,
+    25
+]
 
 
 
