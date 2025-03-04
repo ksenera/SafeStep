@@ -1,15 +1,21 @@
 from main import MASTERBOOLEAN
-from vibration_feedback import timed_vibrator_pulse
-from main import speak
+from vibration_feedback import timed_vibrator_pulse, initializeOutputDevices
+from Sensor import initialize_all_sensors
+from Camera import camera_init
+from audio_feedback import speak
 import RPi.GPIO as GPIO
+from Camera import detect_object
 
+# Master list holds the duration that a vibrator will sleep before turning off
 MASTERLIST = []
 # 3 meters
 OUTER_RANGE_MM = 3000
 # Anything below inner range will be used to 
 # send fastest vibrational pulse
 INNER_RANGE_MM = 500
+# Sensor list holds all the ToF sensor objects
 SENSOR_LIST = []
+# Device list holds all digital output devices
 DEVICE_LIST = []
 
 
@@ -36,7 +42,7 @@ def handleFeedback():
             Pin_On = GPIO.input(device.pin)
             if not Pin_On and MASTERLIST[index] > 0:
                 timed_vibrator_pulse(MASTERLIST[index], [device])
-        speak()
+        speak() # I NEED TEXT U FUCK
 
 
 def handleTOF():
@@ -60,7 +66,7 @@ def handleTOF():
 
             print(f'Sensor[{index}]: {distance}mm')
 
-            # I'm not sure how this needs to change just yet to make things work with audio code
+            '''I'm not sure how this needs to change just yet to make things work with audio code'''
             # sensor_distance_queue.put(distance)
             
             device_index = determine_vibrator_index(index, len(SENSOR_LIST), DEVICE_LIST)
@@ -68,3 +74,21 @@ def handleTOF():
 
             if distance > previous_distance[index] + 100 or distance < previous_distance[index] - 100:
                 MASTERLIST[device_index] = delay
+
+def handleCamera():
+    '''
+    Can we just have detect object detecting 1 object then returning information here?
+    From this point we can take that info and put it into the list/queue that will handle the 
+    feedback in the handleFeedback function?
+    '''
+    results = detect_object()
+
+def initialize_all():
+    # Initialize all global variables required to run threads here
+    # Initialize all devices that require it here
+    SENSOR_LIST = initialize_all_sensors()
+    DEVICE_LIST = initializeOutputDevices()
+    '''I believe this calls another function with enters an infinite loop, we should have this changed'''
+    camera_init()
+
+    return
