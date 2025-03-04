@@ -6,9 +6,14 @@
 """
 from gpiozero import DigitalOutputDevice
 import time
+import asyncio
 
 
 defaultPinList = [18, 24, 25]
+
+
+
+
 
 """
 * Function    : startup_pulse
@@ -90,12 +95,12 @@ def error_pulse(gpio_pin1, gpio_pin2, gpio_pin3):
 * Returns     : NULL
 """
 
-def timed_vibrator_pulse (timespan: int, deviceList: list[DigitalOutputDevice]) -> None:
+async def timed_vibrator_pulse (timespan: int, deviceList: list[DigitalOutputDevice]) -> None:
 
     for device in deviceList:
         device.on()
     
-    time.sleep(timespan)
+    asyncio.sleep(timespan)
 
     for device in deviceList:
         device.off()
