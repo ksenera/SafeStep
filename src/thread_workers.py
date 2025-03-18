@@ -1,14 +1,17 @@
 import asyncio
-from main import MASTERBOOLEAN
-from vibration_feedback import timed_vibrator_pulse, initializeOutputDevices
-from Sensor import initialize_all_sensors
+from vibration_feedback import timed_vibrator_pulse, initializeOutputDevices, shutDownOutputDevices
+from Sensor import initialize_all_sensors, shutdown_all_sensors
 from Camera import camera_init
 from audio_feedback import speak
 import RPi.GPIO as GPIO
 from Camera import detect_object
+from threading import Event
 
-# Master list holds the duration that a vibrator will sleep before turning off
-MASTERLIST = []
+# The event object used to stop all threads
+THREAD_KILL: Event = Event()
+
+# Vibrator durations list holds the duration that a vibrator will sleep before turning off
+VIBRATOR_DURATIONS = []
 # 3 meters
 OUTER_RANGE_MM = 3000
 # Anything below inner range will be used to 
@@ -20,6 +23,9 @@ SENSOR_LIST = []
 DEVICE_LIST = []
 
 
+'''
+    Helper functions
+'''
 def determine_delay(distance: int) -> int | None:
     scaling = 2.5
     if distance < OUTER_RANGE_MM:
@@ -27,6 +33,7 @@ def determine_delay(distance: int) -> int | None:
         return (value * scaling)
 
     return None
+
 
 def determine_vibrator_index(sensor_index: int, sensor_count: int, digital_devices: list) -> int:
     # Determine which vibrator should be used
@@ -38,22 +45,30 @@ def determine_vibrator_index(sensor_index: int, sensor_count: int, digital_devic
     return device_index
 
 
+'''
+    Main thread functions
+'''
 # This function should be ran in the following way
 # asyncio.run(handleFeedback())
 async def handleFeedback():
     vibrator_tasks: list = [None for i in range(len(DEVICE_LIST))]
     speak_task: asyncio.Task[None] = None
 
-    while MASTERBOOLEAN:
+    while not THREAD_KILL.is_set():
         for index, device in enumerate(DEVICE_LIST):
-            if vibrator_tasks[index] is None or vibrator_tasks[index].done() and MASTERLIST[index] > 0:
-                vibrator_tasks[index] = asyncio.create_task(timed_vibrator_pulse(MASTERLIST[index], [device]))
+            if THREAD_KILL.set():
+                break
+
+            if vibrator_tasks[index] is None or vibrator_tasks[index].done() and VIBRATOR_DURATIONS[index] > 0:
+                vibrator_tasks[index] = asyncio.create_task(timed_vibrator_pulse(VIBRATOR_DURATIONS[index], [device]))
 
         '''We need to consume some text and pass it into the speak function'''
         if speak_task is None or speak_task.done():
             speak_task = asyncio.create_task(speak()) # I NEED TEXT U FUCK
 
         asyncio.sleep(0.1)
+
+    shutDownOutputDevices(DEVICE_LIST)
 
 
 def handleTOF():
@@ -65,9 +80,9 @@ def handleTOF():
     for i in range(SENSOR_LIST):
         previous_distance[i] = -1000
 
-    while MASTERBOOLEAN:
+    while not THREAD_KILL.is_set():
         for index, sensor in enumerate(SENSOR_LIST):
-            if MASTERBOOLEAN is False:
+            if THREAD_KILL.set():
                 break
 
             distance = sensor.get_distance()
@@ -84,7 +99,10 @@ def handleTOF():
             delay = determine_delay(distance)
 
             if distance > previous_distance[index] + 100 or distance < previous_distance[index] - 100:
-                MASTERLIST[device_index] = delay
+                VIBRATOR_DURATIONS[device_index] = delay
+
+    shutdown_all_sensors(SENSOR_LIST)
+
 
 def handleCamera():
     '''
@@ -93,6 +111,7 @@ def handleCamera():
     feedback in the handleFeedback function?
     '''
     results = detect_object()
+
 
 def initialize_all():
     # Initialize all global variables required to run threads here
@@ -103,8 +122,3 @@ def initialize_all():
     camera_init()
 
     return
-
-
-if __name__ == '__main__':
-    wat = 105 < 300 < -95
-    print(wat)
