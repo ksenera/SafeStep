@@ -7,15 +7,12 @@
 from gpiozero import DigitalOutputDevice
 import time
 import asyncio
+import json
 
+with open("settings.json", "r") as f:
+    settings = json.load(f)
 
-defaultPinList = [
-    18,
-    24,
-    25
-]
-
-
+defaultPinList = settings["defaultPinList"]
 
 """
 * Function    : startup_pulse
