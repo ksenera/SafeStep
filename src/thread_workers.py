@@ -26,6 +26,10 @@ DEVICE_LIST = []
 '''
     Helper functions
 '''
+"""
+    Takes a distance measurement in mm, performs a calculation, then returns the integer 
+    representing the time second delay used between vibrational pulses.
+"""
 def determine_delay(distance: int) -> int | None:
     scaling = 2.5
     if distance < OUTER_RANGE_MM:
@@ -35,6 +39,9 @@ def determine_delay(distance: int) -> int | None:
     return None
 
 
+"""
+    Determines which vibrator index to use based on a ranging sensor position
+"""
 def determine_vibrator_index(sensor_index: int, sensor_count: int, digital_devices: list) -> int:
     # Determine which vibrator should be used
     value = (sensor_index + 1) / sensor_count
@@ -50,6 +57,10 @@ def determine_vibrator_index(sensor_index: int, sensor_count: int, digital_devic
 '''
 # This function should be ran in the following way
 # asyncio.run(handleFeedback())
+"""
+    Handles all feedback operations. Currently this is an audio feedback opertaion
+    as well as pulsing of vibrational sensors.
+"""
 async def handleFeedback():
     vibrator_tasks: list = [None for i in range(len(DEVICE_LIST))]
     speak_task: asyncio.Task[None] = None
@@ -71,6 +82,9 @@ async def handleFeedback():
     shutDownOutputDevices(DEVICE_LIST)
 
 
+"""
+    Handles reading distance from TOF sensor then populates a list with delays
+"""
 def handleTOF():
     previous_distance = []
     # during regular operations we check agaisn't the previous distance 
@@ -113,6 +127,9 @@ def handleCamera():
     results = detect_object()
 
 
+"""
+    Initializes all devices preparing them for ranging and feedback operations
+"""
 def initialize_all():
     # Initialize all global variables required to run threads here
     # Initialize all devices that require it here
