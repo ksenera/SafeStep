@@ -31,5 +31,5 @@ def playaudio(queue: queue.Queue):
             break
 
 
-def speak(text):
+async def speak(text):
     subprocess.run(["flite", "-voice", "rms", "-t", text])

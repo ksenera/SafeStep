@@ -1,3 +1,4 @@
+import asyncio
 from main import MASTERBOOLEAN
 from vibration_feedback import timed_vibrator_pulse, initializeOutputDevices
 from Sensor import initialize_all_sensors
@@ -36,13 +37,23 @@ def determine_vibrator_index(sensor_index: int, sensor_count: int, digital_devic
 
     return device_index
 
-def handleFeedback():
+
+# This function should be ran in the following way
+# asyncio.run(handleFeedback())
+async def handleFeedback():
+    vibrator_tasks: list = [None for i in range(len(DEVICE_LIST))]
+    speak_task: asyncio.Task[None] = None
+
     while MASTERBOOLEAN:
         for index, device in enumerate(DEVICE_LIST):
-            Pin_On = GPIO.input(device.pin)
-            if not Pin_On and MASTERLIST[index] > 0:
-                timed_vibrator_pulse(MASTERLIST[index], [device])
-        speak() # I NEED TEXT U FUCK
+            if vibrator_tasks[index] is None or vibrator_tasks[index].done() and MASTERLIST[index] > 0:
+                vibrator_tasks[index] = asyncio.create_task(timed_vibrator_pulse(MASTERLIST[index], [device]))
+
+        '''We need to consume some text and pass it into the speak function'''
+        if speak_task is None or speak_task.done():
+            speak_task = asyncio.create_task(speak()) # I NEED TEXT U FUCK
+
+        asyncio.sleep(0.1)
 
 
 def handleTOF():
@@ -92,3 +103,8 @@ def initialize_all():
     camera_init()
 
     return
+
+
+if __name__ == '__main__':
+    wat = 105 < 300 < -95
+    print(wat)
