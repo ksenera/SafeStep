@@ -1,9 +1,18 @@
 import asyncio
 from vibration_feedback import timed_vibrator_pulse, initializeOutputDevices, shutDownOutputDevices
 from Sensor import initialize_all_sensors, shutdown_all_sensors
-from Camera import camera_init, detect_object
 from audio_feedback import speak
 import RPi.GPIO as GPIO
+import time
+
+from Camera import (
+    camera_init,
+    detection_model_init,
+    capture_frame,
+    detect_object,
+    draw_boxes,
+    close_camera
+)
 
 from threading import Event
 
@@ -24,6 +33,9 @@ DEVICE_LIST = []
 
 # list to store more recent distance for each sensor
 SENSOR_DISTANCE = []
+
+# also ref detector from camera.py
+detector = None
 
 '''
     Helper functions
@@ -132,9 +144,30 @@ def handleCamera():
     From this point we can take that info and put it into the list/queue that will handle the 
     feedback in the handleFeedback function?
     '''
-    while not THREAD_KILL.is_set():
-        detect_object(SENSOR_DISTANCE, distance_threshold=OUTER_RANGE_MM)
+    # first initialize camera and detection model 
+    global detector
+    camera_init()
+    detector = detection_model_init()
 
+    while not THREAD_KILL.is_set():
+        # next capture a frame from the camera
+        image = capture_frame()
+        if image is None:
+            continue
+        # first run detection so boundary boxes can be drawn 
+        detections = detect_object(detector, image)
+        # then draw the boxes on the image
+        detected_objects = draw_boxes(image, detections)
+        
+        # check if any sensor is under 3000 mm range 
+        in_range = any(dist < OUTER_RANGE_MM for dist in SENSOR_DISTANCE)
+        if in_range and detected_objects:
+            for obj in detected_objects:
+                # here we can add the object to the queue for audio feedback
+                pass        
+        #detect_object(SENSOR_DISTANCE, distance_threshold=OUTER_RANGE_MM)
+        time.sleep(0.1)
+    close_camera()
 
 """
     Initializes all devices preparing them for ranging and feedback operations

@@ -33,7 +33,7 @@ def camera_init():
     Detection Model initializer that should create the MediaPipe ObjectDetector instance of 
     EfficientDet. Again only called once here. 
 """
-def init_detection_model():
+def detection_model_init():
     #Initialize inference options for the Mediapipe object
     base_options = python.BaseOptions(model_asset_path = 'efficientdet.tflite')
     options = vision.ObjectDetectorOptions(base_options=base_options,
