@@ -28,13 +28,20 @@ def camera_init():
     picam2.configure(camera_config)
     picam2.start()
 
-def detect_object(detected_category_queue=None, sensor_distance_queue=None):
+
+"""
+    Detection Model initializer that should create the MediaPipe ObjectDetector instance of 
+    EfficientDet. Again only called once here. 
+"""
+def init_detection_model():
     #Initialize inference options for the Mediapipe object
     base_options = python.BaseOptions(model_asset_path = 'efficientdet.tflite')
     options = vision.ObjectDetectorOptions(base_options=base_options,
                                         score_threshold=0.5)
 
-    detector = vision.ObjectDetector.create_from_options(options)
+    return vision.ObjectDetector.create_from_options(options)
+
+def detect_object(detected_category_queue=None, sensor_distance_queue=None):
 
     #Initialize Variables
     #last_time = 0
