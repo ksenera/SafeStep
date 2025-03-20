@@ -11,36 +11,39 @@ event = Event()
 AUDIO_QUEUE = queue.Queue(maxsize=1)
 
 def pushAudioMessage(message: str):
-    #while not AUDIO_QUEUE.empty():
-        #AUDIO_QUEUE.get_nowait()
+    if AUDIO_QUEUE.full():
+        _ = AUDIO_QUEUE.get_nowait()
     AUDIO_QUEUE.put(message)
 
-def getNextAudioMessage():
+def getNextAudioMessage() -> str | None:
     if AUDIO_QUEUE.empty():
         return None
     return AUDIO_QUEUE.get()
 
-def addToQueue(queue:queue.Queue):
-    for i in range(1):
-        for i in categories:
-            queue.put(i)
+def speak(text: str):
+    subprocess.Popen(["flite", "-voice", "rms", "-t", text])
 
 
-def playaudio(queue: queue.Queue):
-    previousText = None
-
-    while True:
-        if queue.empty():
-            continue
-
-        text = queue.get()
-
-        if text != previousText or previousText is None:
-            previousText = text
-
-        if queue.empty():
-            break
+#def addToQueue(queue:queue.Queue):
+#    for i in range(1):
+#        for i in categories:
+#            queue.put(i)
 
 
-async def speak(text):
-    subprocess.run(["flite", "-voice", "rms", "-t", text])
+#def playaudio(queue: queue.Queue):
+#    previousText = None
+
+#    while True:
+#        if queue.empty():
+#            continue
+
+#        text = queue.get()
+
+#        if text != previousText or previousText is None:
+#            previousText = text
+
+#        if queue.empty():
+#            break
+
+
+

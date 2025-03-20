@@ -3,7 +3,7 @@ from vibration_feedback import timed_vibrator_pulse, initializeOutputDevices, sh
 from Sensor import initialize_all_sensors, shutdown_all_sensors
 from audio_feedback import speak, pushAudioMessage, getNextAudioMessage
 import RPi.GPIO as GPIO
-from time import sleep
+from time import time, sleep
 
 from Camera import (
     camera_init,
@@ -93,10 +93,10 @@ async def handleFeedback():
 
         '''We need to consume some text and pass it into the speak function DONE'''
         '''Pulls whatever is on the queue in audio_feedback.py'''
-        if speak_task is None or speak_task.done():
-            tts = getNextAudioMessage()
-            if tts:
-                speak_task = asyncio.create_task(speak(tts))
+        #if speak_task is None or speak_task.done():
+        tts = getNextAudioMessage()
+        if tts:
+            speak(tts)
 
         await asyncio.sleep(0.1)
 
@@ -194,7 +194,7 @@ def handleCamera():
                         text = f"{label} is {dist_mm} mm {direction}"
                         # here we can add the object to the queue for audio feedback
                         pushAudioMessage(text)  
-
+                time.sleep(0.1)
     close_camera()  
 
 
