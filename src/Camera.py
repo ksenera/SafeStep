@@ -42,7 +42,7 @@ def init_detection_model():
     return vision.ObjectDetector.create_from_options(options)
 
 """
-    Camera in on but this new function only captures single frame from the camera as thread
+    Camera is on but this new function only captures single frame from the camera as thread
     workers will handle the rest of the camera operations. 
 """
 def capture_frame():
@@ -51,73 +51,69 @@ def capture_frame():
     image = picam2.capture_array()
     return image
 
-def detect_object(detected_category_queue=None, sensor_distance_queue=None):
 
-    #Initialize Variables
-    #last_time = 0
-    #inference_time = 0
-    target = 'person'
-    while True:
-        #Take an image and format it
-        image = picam2.capture_array()
-        #image = cv2.rotate(image, cv2.ROTATE_180)
-        rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+"""
+    Object detection runs on image already captures and returns the detection results.
+"""
+def detect_object(detector, image):
+    #image = cv2.rotate(image, cv2.ROTATE_180)
+    rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     
-        #rgb_image = cv2.resize(rgb_image,(640,640))
-        mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_image)
+    #rgb_image = cv2.resize(rgb_image,(640,640))
+    mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_image)
+    detection_result = detector.detect(mp_image)
+    return detection_result.detections
+
+"""
+    On the frame detect boundary boxes and labels are drawn.
+    Returns a list of dicts with classfication info
+"""
+def draw_boxes(image, detections):
+
+    if not detections:
+        return []
     
-    
-        #Perform inference and time it
-        last_time = time.time()
-        detection_result = detector.detect(mp_image)
-        inference_time = time.time() - last_time
-        
-        # retrieve distances from sensor
-        sensor_distance = None
-        if sensor_distance_queue is not None and not sensor_distance_queue.empty():
-            sensor_distance = sensor_distance_queue.get()
+    h, w, _ = image.shape
+    detected_objects = []
 
-        pressedKey = cv2.waitKey(30) & 0xFF
+    for detection in detections:
+        if not detection.categories:
+            continue
 
-        #Parse through detections
-        for detection in detection_result.detections:
-            category = detection.categories[0]
-            classification = category.category_name
+        category = detection.categories[0]
+        classification = category.category_name
+        score = category.score
 
-            #If the classification matches the target class
-            if(classification == target):
-                print(str(round(category.score,2)))
-                bbox = detection.bounding_box
-                detected = 1
-                width = bbox.width
-                height = bbox.height
-                centroidx = bbox.origin_x + (width/2)
-                centroidy = bbox.origin_y + (height/2)
-                deviationx = centroidx - 240
-                deviationy = centroidy - 320
-            
-                start_point = (bbox.origin_x, bbox.origin_y)
-                stop_point = (bbox.origin_x + width, bbox.origin_y + height)
-                
-                cv2.rectangle(rgb_image, start_point, stop_point, (0, 255, 0), 2)
-                
-                cv2.putText(rgb_image, category.category_name.upper(), (start_point[0] + 10, start_point[1] + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+        bbox = detection.bounding_box
+        x_min = bbox.origin_x
+        y_min = bbox.origin_y
+        width = bbox.width
+        height = bbox.height
 
-                if sensor_distance is not None and sensor_distance <= 3000:
-                    if detected_category_queue is not None:
-                        detected_category_queue.put({
-                            "classification": classification,
-                            "centroid": (centroidx, centroidy),
-                            "distance": sensor_distance
-                        })
-                
-                #print(category.category_name, ", with prob: ", str(round(category.score,2))
-                #    , "and centroid: ", str(centroidx),",",str(centroidy))
-                #print('deviation from center: ', str(deviationx), ",", str(deviationy))
-        
-        cv2.imshow('livestream', rgb_image)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+        start_point = (x_min, y_min)
+        stop_point = (x_min + width, y_min + height)
+        cv2.rectangle(image, start_point, stop_point, (0, 255, 0), 2)    
+        cv2.putText(image, category.category_name.upper(), (start_point[0] + 10, start_point[1] + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
-        #print("Inference Time: ", str(time.time()-last_time))
-        #print('--------------------------------------------')
+        # centroid computed here:
+        centroid_x = x_min + width // 2
+        centroid_y = y_min + height // 2
+
+        # save into dict for when thread_workers needs it 
+        detected_objects.append({
+            "label": classification,
+            "score": score,
+            "centroid": (centroid_x, centroid_y)
+        })
+
+    return detected_objects
+
+"""
+    close camera
+"""
+def close_camera():
+    global picam2
+    if picam2:
+        picam2.stop()
+    cv2.destroyAllWindows()
+
