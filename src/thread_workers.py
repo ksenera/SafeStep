@@ -1,7 +1,7 @@
 import asyncio
 from vibration_feedback import timed_vibrator_pulse, initializeOutputDevices, shutDownOutputDevices
 from Sensor import initialize_all_sensors, shutdown_all_sensors
-from audio_feedback import speak
+from audio_feedback import speak, pushAudioMessage, getNextAudioMessage
 import RPi.GPIO as GPIO
 import time
 
@@ -11,6 +11,7 @@ from Camera import (
     capture_frame,
     detect_object,
     draw_boxes,
+    show_frame,
     close_camera
 )
 
@@ -88,10 +89,13 @@ async def handleFeedback():
                 vibrator_tasks[index] = asyncio.create_task(timed_vibrator_pulse(VIBRATOR_DURATIONS[index], [device]))
 
         '''We need to consume some text and pass it into the speak function'''
+        '''Pulls whatever is on the queue in audio_feedback.py'''
         if speak_task is None or speak_task.done():
-            speak_task = asyncio.create_task(speak()) # I NEED TEXT U FUCK
+            tts = getNextAudioMessage()
+            if tts:
+                speak_task = asyncio.create_task(speak(tts)) # I NEED TEXT U FUCK
 
-        asyncio.sleep(0.1)
+        await asyncio.sleep(0.1)
 
     shutDownOutputDevices(DEVICE_LIST)
 
@@ -126,7 +130,7 @@ def handleTOF():
             SENSOR_DISTANCE[index] = distance
             print(f'Sensor[{index}]: {distance}mm')
 
-            '''I'm not sure how this needs to change just yet to make things work with audio code'''
+            '''I'm not sure how this needs to change just yet to make things work with audio code SEE RIGHT ABOVE'''
             # sensor_distance_queue.put(distance)
             
             device_index = determine_vibrator_index(index, len(SENSOR_LIST), DEVICE_LIST)
@@ -145,29 +149,56 @@ def handleCamera():
     feedback in the handleFeedback function?
     '''
     # first initialize camera and detection model 
-    global detector
     camera_init()
-    detector = detection_model_init()
+    detection_model_init()
 
-    while not THREAD_KILL.is_set():
-        # next capture a frame from the camera
-        image = capture_frame()
-        if image is None:
-            continue
-        # first run detection so boundary boxes can be drawn 
-        detections = detect_object(detector, image)
-        # then draw the boxes on the image
-        detected_objects = draw_boxes(image, detections)
-        
-        # check if any sensor is under 3000 mm range 
-        in_range = any(dist < OUTER_RANGE_MM for dist in SENSOR_DISTANCE)
-        if in_range and detected_objects:
-            for obj in detected_objects:
-                # here we can add the object to the queue for audio feedback
-                pass        
-        #detect_object(SENSOR_DISTANCE, distance_threshold=OUTER_RANGE_MM)
-        time.sleep(0.1)
-    close_camera()
+    try:
+        while not THREAD_KILL.is_set():
+            # next capture a frame from the camera
+            frame = capture_frame()
+            if frame is None:
+                continue
+            # first run detection so boundary boxes can be drawn 
+            detections = detect_object(frame)
+            # then draw the boxes on the image
+            detected_objects = draw_boxes(frame, detections)
+            # show fully annotated frame but if user clicks q then break
+            quit_or_annotate = show_frame(frame)
+            if quit_or_annotate:
+                break
+            # check if any sensor is under 3000 mm range 
+            in_range = any(dist < OUTER_RANGE_MM for dist in SENSOR_DISTANCE)
+            if in_range and detected_objects:
+                # add the left, right or center 
+                width = frame.shape[1]
+                left_boundary = width / 3
+                right_boundary = 2 * width / 3
+
+                for obj in detected_objects:
+                    label = obj["label"]
+                    (cx, _) = obj["centroid"]
+
+                    # directions 
+                    if cx < left_boundary:
+                        sensor_index = 0
+                        direction = "left of you"
+                    elif cx > right_boundary:
+                        sensor_index = 2
+                        direction = "right of you"
+                    else:
+                        sensor_index = 1
+                        direction = "in front of you"
+                    
+                    # now check if the detected object is within the 3000 mm range 
+                    if 0 <= sensor_index < len(SENSOR_DISTANCE):
+                        dist_mm = SENSOR_DISTANCE[sensor_index]
+                        if dist_mm < OUTER_RANGE_MM:
+                            text = f"{label} is {dist_mm} mm {direction}"
+                            # here we can add the object to the queue for audio feedback
+                            pushAudioMessage(text)     
+            time.sleep(0.1)
+    finally:
+        close_camera()
 
 """
     Initializes all devices preparing them for ranging and feedback operations
@@ -178,6 +209,7 @@ def initialize_all():
     SENSOR_LIST = initialize_all_sensors()
     DEVICE_LIST = initializeOutputDevices()
     '''I believe this calls another function with enters an infinite loop, we should have this changed'''
+    ''' camera_init() no longer has infinite loop'''
     camera_init()
 
     return
