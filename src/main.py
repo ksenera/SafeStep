@@ -1,15 +1,34 @@
+import os
+import signal
+
 from thread_workers import THREAD_KILL, initialize_all, handleCamera, handleTOF, handleFeedback
 import threading
 import asyncio
+import time
+import json
+
+with open('settings.json', 'r') as file:
+    config = json.load(file)
 
 
-def cleanup_processes(signum, frame):
+debug = config['debug']
+
+def cleanup_processes(signum = None, frame = None):
     THREAD_KILL.set()
+
+
+def error_restart(pid):
+    cleanup_processes()
+
+    time.sleep(5)
+
+    os.kill(pid, signal.SIGTERM)
 
 
 def main():
     signal.signal(signal.SIGTSTP, cleanup_processes)
 
+    pid = os.getpid()
     initialize_all()
 
     t1 = threading.Thread(target=handleCamera)
