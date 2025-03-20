@@ -1,10 +1,10 @@
 import asyncio
 from vibration_feedback import timed_vibrator_pulse, initializeOutputDevices, shutDownOutputDevices
 from Sensor import initialize_all_sensors, shutdown_all_sensors
-from Camera import camera_init
+from Camera import camera_init, detect_object
 from audio_feedback import speak
 import RPi.GPIO as GPIO
-from Camera import detect_object
+
 from threading import Event
 
 # The event object used to stop all threads
@@ -22,6 +22,8 @@ SENSOR_LIST = []
 # Device list holds all digital output devices
 DEVICE_LIST = []
 
+# list to store more recent distance for each sensor
+SENSOR_DISTANCE = []
 
 '''
     Helper functions
@@ -86,6 +88,9 @@ async def handleFeedback():
     Handles reading distance from TOF sensor then populates a list with delays
 """
 def handleTOF():
+    
+    global SENSOR_DISTANCE
+
     previous_distance = []
     # during regular operations we check agaisn't the previous distance 
     #  and only update the dealy when the distance difference is +- 100 mm
@@ -104,6 +109,9 @@ def handleTOF():
             if distance < 0:
                 continue
 
+
+            # here store the latest distance for whichever sensor 
+            SENSOR_DISTANCE[index] = distance
             print(f'Sensor[{index}]: {distance}mm')
 
             '''I'm not sure how this needs to change just yet to make things work with audio code'''
@@ -124,7 +132,8 @@ def handleCamera():
     From this point we can take that info and put it into the list/queue that will handle the 
     feedback in the handleFeedback function?
     '''
-    results = detect_object()
+    while not THREAD_KILL.is_set():
+        detect_object(SENSOR_DISTANCE, distance_threshold=OUTER_RANGE_MM)
 
 
 """
