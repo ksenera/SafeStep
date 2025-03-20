@@ -102,7 +102,7 @@ async def timed_vibrator_pulse (timespan: int, deviceList: list[DigitalOutputDev
     for device in deviceList:
         device.on()
     
-    asyncio.sleep(timespan)
+    await asyncio.sleep(timespan)
 
     for device in deviceList:
         device.off()

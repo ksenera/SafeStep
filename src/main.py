@@ -1,3 +1,4 @@
+import signal
 from thread_workers import THREAD_KILL, initialize_all, handleCamera, handleTOF, handleFeedback
 import threading
 import asyncio
@@ -14,7 +15,7 @@ def main():
 
     t1 = threading.Thread(target=handleCamera)
     t2 = threading.Thread(target=handleTOF)
-    t3 = threading.Thread(target=asyncio.run(handleFeedback))
+    t3 = threading.Thread(target=asyncio.run, args=(handleFeedback(),))
 
     t1.start()
     t2.start()
@@ -28,3 +29,8 @@ def main():
         
 if __name__ == "__main__":
     main()
+    # signal.signal(signal.SIGTSTP, cleanup_processes)
+    # initialize_all()
+    # handleCamera()
+    # handleFeedback()
+

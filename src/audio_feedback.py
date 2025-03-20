@@ -5,12 +5,14 @@ import pyttsx3
 import subprocess
 
 engine = pyttsx3.init()
-catagories = ["low Furniture", "high Furniture", "doorways"]
+categories = ["low Furniture", "high Furniture", "doorways"]
 event = Event()
 
-AUDIO_QUEUE = queue.Queue()
+AUDIO_QUEUE = queue.Queue(maxsize=1)
 
 def pushAudioMessage(message: str):
+    #while not AUDIO_QUEUE.empty():
+        #AUDIO_QUEUE.get_nowait()
     AUDIO_QUEUE.put(message)
 
 def getNextAudioMessage():
@@ -20,7 +22,7 @@ def getNextAudioMessage():
 
 def addToQueue(queue:queue.Queue):
     for i in range(1):
-        for i in catagories:
+        for i in categories:
             queue.put(i)
 
 

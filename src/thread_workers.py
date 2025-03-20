@@ -3,7 +3,7 @@ from vibration_feedback import timed_vibrator_pulse, initializeOutputDevices, sh
 from Sensor import initialize_all_sensors, shutdown_all_sensors
 from audio_feedback import speak, pushAudioMessage, getNextAudioMessage
 import RPi.GPIO as GPIO
-import time
+from time import sleep
 
 from Camera import (
     camera_init,
@@ -45,13 +45,13 @@ detector = None
     Takes a distance measurement in mm, performs a calculation, then returns the integer 
     representing the time second delay used between vibrational pulses.
 """
-def determine_delay(distance: int) -> int | None:
+def determine_delay(distance: int) -> int:
     scaling = 2.5
     if distance < OUTER_RANGE_MM:
         value = distance / OUTER_RANGE_MM
         return (value * scaling)
 
-    return None
+    return 0
 
 
 """
@@ -81,8 +81,11 @@ async def handleFeedback():
     speak_task: asyncio.Task[None] = None
 
     while not THREAD_KILL.is_set():
+        if len(SENSOR_DISTANCE) > 0:
+            print(SENSOR_DISTANCE)
+
         for index, device in enumerate(DEVICE_LIST):
-            if THREAD_KILL.set():
+            if THREAD_KILL.is_set():
                 break
 
             if vibrator_tasks[index] is None or vibrator_tasks[index].done() and VIBRATOR_DURATIONS[index] > 0:
@@ -93,7 +96,7 @@ async def handleFeedback():
         if speak_task is None or speak_task.done():
             tts = getNextAudioMessage()
             if tts:
-                speak_task = asyncio.create_task(speak(tts)) # I NEED TEXT U FUCK
+                speak_task = asyncio.create_task(speak(tts))
 
         await asyncio.sleep(0.1)
 
@@ -104,8 +107,6 @@ async def handleFeedback():
     Handles reading distance from TOF sensor then populates a list with delays
 """
 def handleTOF():
-    
-    global SENSOR_DISTANCE
 
     previous_distance = []
     # during regular operations we check agaisn't the previous distance 
@@ -117,10 +118,11 @@ def handleTOF():
 
     while not THREAD_KILL.is_set():
         for index, sensor in enumerate(SENSOR_LIST):
-            if THREAD_KILL.set():
+            if THREAD_KILL.is_set():
                 break
 
             distance = sensor.get_distance()
+            print(distance)
             # if distance is less than zero we assume it's a bad reading
             if distance < 0:
                 continue
@@ -149,53 +151,53 @@ def handleCamera():
     feedback in the handleFeedback function?
     '''
 
-    try:
-        while not THREAD_KILL.is_set():
-            # next capture a frame from the camera
-            frame = capture_frame()
-            if frame is None:
-                continue
-            # first run detection so boundary boxes can be drawn 
-            detections = detect_object(frame)
-            # then draw the boxes on the image
-            detected_objects = draw_boxes(frame, detections)
-            # show fully annotated frame but if user clicks q then break
-            quit_or_annotate = show_frame(frame)
-            if quit_or_annotate:
-                break
-            # check if any sensor is under 3000 mm range 
-            in_range = any(dist < OUTER_RANGE_MM for dist in SENSOR_DISTANCE)
-            if in_range and detected_objects:
-                # add the left, right or center 
-                width = frame.shape[1]
-                left_boundary = width / 3
-                right_boundary = 2 * width / 3
+    while not THREAD_KILL.is_set():
+        # next capture a frame from the camera
+        frame = capture_frame()
+        if frame is None:
+            continue
+        # first run detection so boundary boxes can be drawn 
+        detections = detect_object(frame)
+        # then draw the boxes on the image
+        detected_objects = draw_boxes(frame, detections)
+        # show fully annotated frame but if user clicks q then break
+        quit_or_annotate = show_frame(frame)
+        if quit_or_annotate:
+            break
+        # check if any sensor is under 3000 mm range 
+        in_range = any(dist < OUTER_RANGE_MM for dist in SENSOR_DISTANCE)
+        if in_range and detected_objects:
+            # add the left, right or center 
+            width = frame.shape[1]
+            left_boundary = width / 3
+            right_boundary = 2 * width / 3
 
-                for obj in detected_objects:
-                    label = obj["label"]
-                    (cx, _) = obj["centroid"]
+            for obj in detected_objects:
+                label = obj["label"]
+                (cx, _) = obj["centroid"]
 
-                    # directions 
-                    if cx < left_boundary:
-                        sensor_index = 0
-                        direction = "left of you"
-                    elif cx > right_boundary:
-                        sensor_index = 2
-                        direction = "right of you"
-                    else:
-                        sensor_index = 1
-                        direction = "in front of you"
-                    
-                    # now check if the detected object is within the 3000 mm range 
-                    if 0 <= sensor_index < len(SENSOR_DISTANCE):
-                        dist_mm = SENSOR_DISTANCE[sensor_index]
-                        if dist_mm < OUTER_RANGE_MM:
-                            text = f"{label} is {dist_mm} mm {direction}"
-                            # here we can add the object to the queue for audio feedback
-                            pushAudioMessage(text)     
-            time.sleep(0.1)
-    finally:
-        close_camera()
+                # directions 
+                if cx < left_boundary:
+                    sensor_index = 0
+                    direction = "left of you"
+                elif cx > right_boundary:
+                    sensor_index = 2
+                    direction = "right of you"
+                else:
+                    sensor_index = 1
+                    direction = "in front of you"
+                
+                # now check if the detected object is within the 3000 mm range 
+                if 0 <= sensor_index < len(SENSOR_DISTANCE):
+                    dist_mm = SENSOR_DISTANCE[sensor_index]
+                    if dist_mm < OUTER_RANGE_MM:
+                        text = f"{label} is {dist_mm} mm {direction}"
+                        # here we can add the object to the queue for audio feedback
+                        pushAudioMessage(text)  
+        sleep(0.1)
+
+    close_camera()  
+
 
 """
     Initializes all devices preparing them for ranging and feedback operations
@@ -203,11 +205,21 @@ def handleCamera():
 def initialize_all():
     # Initialize all global variables required to run threads here
     # Initialize all devices that require it here
+    global SENSOR_LIST
+    global DEVICE_LIST
+    
+
     SENSOR_LIST = initialize_all_sensors()
     DEVICE_LIST = initializeOutputDevices()
     '''I believe this calls another function with enters an infinite loop, we should have this changed'''
     ''' camera_init() no longer has infinite loop'''
     camera_init()
     detection_model_init()
+
+    global VIBRATOR_DURATIONS
+    VIBRATOR_DURATIONS = [0 for _ in range(len(DEVICE_LIST))]
+
+    global SENSOR_DISTANCE
+    SENSOR_DISTANCE = [0 for _ in range(len(SENSOR_LIST))]
 
     return

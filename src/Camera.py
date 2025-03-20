@@ -57,12 +57,16 @@ def capture_frame():
 """
     Object detection runs on frame already captures and returns the detection results.
 """
-def detect_object(detector, frame):
+def detect_object(frame):
+    global detector 
     #image = cv2.rotate(image, cv2.ROTATE_180)
     rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     
     #rgb_frame = cv2.resize(rgb_frame,(640,640))
-    mp_image = mp.image(image_format=mp.imageFormat.SRGB, data=rgb_image)
+    mp_image = mp.Image(
+        image_format=mp.ImageFormat.SRGB, 
+        data=rgb_image
+    )
     result = detector.detect(mp_image)
     if result is None:
         return []
