@@ -112,7 +112,7 @@ def handleTOF():
     #  and only update the dealy when the distance difference is +- 100 mm
     #  for this reason we initialize the previous distance list with large 
     #  negative numbers so it evaluates to true
-    for i in range(SENSOR_LIST):
+    for i in range(len(SENSOR_LIST)):
         previous_distance.append(-1000)
 
     while not THREAD_KILL.is_set():
