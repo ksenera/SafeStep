@@ -88,7 +88,7 @@ async def handleFeedback():
             if vibrator_tasks[index] is None or vibrator_tasks[index].done() and VIBRATOR_DURATIONS[index] > 0:
                 vibrator_tasks[index] = asyncio.create_task(timed_vibrator_pulse(VIBRATOR_DURATIONS[index], [device]))
 
-        '''We need to consume some text and pass it into the speak function'''
+        '''We need to consume some text and pass it into the speak function DONE'''
         '''Pulls whatever is on the queue in audio_feedback.py'''
         if speak_task is None or speak_task.done():
             tts = getNextAudioMessage()
@@ -113,7 +113,7 @@ def handleTOF():
     #  for this reason we initialize the previous distance list with large 
     #  negative numbers so it evaluates to true
     for i in range(SENSOR_LIST):
-        previous_distance[i] = -1000
+        previous_distance.append(-1000)
 
     while not THREAD_KILL.is_set():
         for index, sensor in enumerate(SENSOR_LIST):
@@ -148,9 +148,6 @@ def handleCamera():
     From this point we can take that info and put it into the list/queue that will handle the 
     feedback in the handleFeedback function?
     '''
-    # first initialize camera and detection model 
-    camera_init()
-    detection_model_init()
 
     try:
         while not THREAD_KILL.is_set():
@@ -211,5 +208,6 @@ def initialize_all():
     '''I believe this calls another function with enters an infinite loop, we should have this changed'''
     ''' camera_init() no longer has infinite loop'''
     camera_init()
+    detection_model_init()
 
     return
