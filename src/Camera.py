@@ -41,6 +41,16 @@ def init_detection_model():
 
     return vision.ObjectDetector.create_from_options(options)
 
+"""
+    Camera in on but this new function only captures single frame from the camera as thread
+    workers will handle the rest of the camera operations. 
+"""
+def capture_frame():
+    global picam2
+    # add a check for if the camera is initialized after
+    image = picam2.capture_array()
+    return image
+
 def detect_object(detected_category_queue=None, sensor_distance_queue=None):
 
     #Initialize Variables
