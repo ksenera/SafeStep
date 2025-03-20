@@ -4,15 +4,13 @@ import time
 import pyttsx3
 import subprocess
 
-engine = pyttsx3.init()
-categories = ["low Furniture", "high Furniture", "doorways"]
-event = Event()
 
-AUDIO_QUEUE = queue.Queue(maxsize=1)
+
+AUDIO_QUEUE = queue.Queue()
 
 def pushAudioMessage(message: str):
-    if AUDIO_QUEUE.full():
-        _ = AUDIO_QUEUE.get_nowait()
+    while not AUDIO_QUEUE.empty():
+        AUDIO_QUEUE.get_nowait()
     AUDIO_QUEUE.put(message)
 
 def getNextAudioMessage() -> str | None:
@@ -20,9 +18,13 @@ def getNextAudioMessage() -> str | None:
         return None
     return AUDIO_QUEUE.get()
 
-def speak(text: str):
-    subprocess.Popen(["flite", "-voice", "rms", "-t", text])
+async def speak(text: str):
+    subprocess.run(["flite", "-voice", "rms", "-t", text])
 
+
+engine = pyttsx3.init()
+categories = ["low Furniture", "high Furniture", "doorways"]
+event = Event()
 
 #def addToQueue(queue:queue.Queue):
 #    for i in range(1):

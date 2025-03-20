@@ -93,10 +93,10 @@ async def handleFeedback():
 
         '''We need to consume some text and pass it into the speak function DONE'''
         '''Pulls whatever is on the queue in audio_feedback.py'''
-        #if speak_task is None or speak_task.done():
-        tts = getNextAudioMessage()
-        if tts:
-            speak(tts)
+        if speak_task is None or speak_task.done():
+            tts = getNextAudioMessage()
+            if tts:
+                speak_task = asyncio.create_task(speak(tts))
 
         await asyncio.sleep(0.1)
 
@@ -179,22 +179,22 @@ def handleCamera():
                 # directions 
                 if cx < left_boundary:
                     sensor_index = 0
-                    direction = "left of you"
+                    direction = "left"
                 elif cx > right_boundary:
                     sensor_index = 2
-                    direction = "right of you"
+                    direction = "right"
                 else:
                     sensor_index = 1
-                    direction = "in front of you"
+                    direction = "in front"
                 
                 # now check if the detected object is within the 3000 mm range 
                 if 0 <= sensor_index < len(SENSOR_DISTANCE):
                     dist_mm = SENSOR_DISTANCE[sensor_index]
                     if dist_mm < OUTER_RANGE_MM:
-                        text = f"{label} is {dist_mm} mm {direction}"
+                        text = f"{label} {direction} {dist_mm} mm"
                         # here we can add the object to the queue for audio feedback
                         pushAudioMessage(text)  
-                time.sleep(0.1)
+            
     close_camera()  
 
 

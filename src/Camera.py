@@ -24,7 +24,7 @@ def camera_init():
     global picam2, camera_config
     picam2 = Picamera2()
     picam2.preview_configuration.main.size=(254,254)
-    camera_config = picam2.create_still_configuration({"size": (600,600)})
+    camera_config = picam2.create_still_configuration({"size": (320,320)})
 
     picam2.configure(camera_config)
     picam2.start()
