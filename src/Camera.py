@@ -12,6 +12,7 @@ import time
 from picamera2 import Picamera2, Preview
 
 picam2 = None
+camera_config = None
 detector = None
 
 """
@@ -20,7 +21,7 @@ detector = None
 """
 def camera_init():
 
-    global picam2
+    global picam2, camera_config
     picam2 = Picamera2()
     picam2.preview_configuration.main.size=(254,254)
     camera_config = picam2.create_still_configuration({"size": (600,600)})
@@ -34,12 +35,13 @@ def camera_init():
     EfficientDet. Again only called once here. 
 """
 def detection_model_init():
+    global detector
     #Initialize inference options for the Mediapipe object
     base_options = python.BaseOptions(model_asset_path = 'efficientdet.tflite')
     options = vision.ObjectDetectorOptions(base_options=base_options,
                                         score_threshold=0.5)
 
-    return vision.ObjectDetector.create_from_options(options)
+    detector = vision.ObjectDetector.create_from_options(options)
 
 """
     Camera is on but this new function only captures single frame from the camera as thread
@@ -48,32 +50,30 @@ def detection_model_init():
 def capture_frame():
     global picam2
     # add a check for if the camera is initialized after
-    image = picam2.capture_array()
-    return image
+    frame = picam2.capture_array()
+    return frame
 
 
 """
-    Object detection runs on image already captures and returns the detection results.
+    Object detection runs on frame already captures and returns the detection results.
 """
-def detect_object(detector, image):
+def detect_object(detector, frame):
     #image = cv2.rotate(image, cv2.ROTATE_180)
-    rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    rgb_image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     
-    #rgb_image = cv2.resize(rgb_image,(640,640))
-    mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_image)
-    detection_result = detector.detect(mp_image)
-    return detection_result.detections
+    #rgb_frame = cv2.resize(rgb_frame,(640,640))
+    mp_image = mp.image(image_format=mp.imageFormat.SRGB, data=rgb_image)
+    result = detector.detect(mp_image)
+    if result is None:
+        return []
+    return result.detections 
 
 """
     On the frame detect boundary boxes and labels are drawn.
     Returns a list of dicts with classfication info
 """
-def draw_boxes(image, detections):
-
-    if not detections:
-        return []
-    
-    h, w, _ = image.shape
+def draw_boxes(frame, detections):
+    h, w, _ = frame.shape
     detected_objects = []
 
     for detection in detections:
@@ -92,8 +92,8 @@ def draw_boxes(image, detections):
 
         start_point = (x_min, y_min)
         stop_point = (x_min + width, y_min + height)
-        cv2.rectangle(image, start_point, stop_point, (0, 255, 0), 2)    
-        cv2.putText(image, category.category_name.upper(), (start_point[0] + 10, start_point[1] + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+        cv2.rectangle(frame, start_point, stop_point, (0, 255, 0), 2)    
+        cv2.putText(frame, category.category_name.upper(), (start_point[0] + 10, start_point[1] + 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
         # centroid computed here:
         centroid_x = x_min + width // 2
@@ -107,6 +107,16 @@ def draw_boxes(image, detections):
         })
 
     return detected_objects
+
+"""
+    show annotated frame and handle q to quit in OpenCV window.  
+"""
+def show_frame(frame):
+    cv2.imshow("livestream", frame)
+    key = cv2.waitKey(1) & 0xFF
+    if key == ord('q'):
+        return True 
+    return False
 
 """
     close camera
