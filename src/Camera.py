@@ -10,17 +10,23 @@ import time
 
 # Initialize the camera object
 from picamera2 import Picamera2, Preview
-picam2 = Picamera2()
-picam2.preview_configuration.main.size=(254,254)
-camera_config = picam2.create_still_configuration({"size": (600,600)})
 
-def camera_init(detected_category_queue=None, sensor_distance_queue=None):
+picam2 = None
+detector = None
+
+"""
+    Only initializes PiCamera2 and configures it. This is only called once here as it will
+    loop in handleCamera() in thread_workers.py
+"""
+def camera_init():
+
+    global picam2
+    picam2 = Picamera2()
+    picam2.preview_configuration.main.size=(254,254)
+    camera_config = picam2.create_still_configuration({"size": (600,600)})
 
     picam2.configure(camera_config)
     picam2.start()
-    detect_object(detected_category_queue, sensor_distance_queue)
-    picam2.stop()
-    cv2.destroyAllWindows()
 
 def detect_object(detected_category_queue=None, sensor_distance_queue=None):
     #Initialize inference options for the Mediapipe object
