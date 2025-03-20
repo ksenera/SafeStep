@@ -8,6 +8,15 @@ engine = pyttsx3.init()
 catagories = ["low Furniture", "high Furniture", "doorways"]
 event = Event()
 
+AUDIO_QUEUE = queue.Queue()
+
+def pushAudioMessage(message: str):
+    AUDIO_QUEUE.put(message)
+
+def getNextAudioMessage():
+    if AUDIO_QUEUE.empty():
+        return None
+    return AUDIO_QUEUE.get()
 
 def addToQueue(queue:queue.Queue):
     for i in range(1):
