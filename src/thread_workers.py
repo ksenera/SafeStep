@@ -194,7 +194,6 @@ def handleCamera():
                         text = f"{label} is {dist_mm} mm {direction}"
                         # here we can add the object to the queue for audio feedback
                         pushAudioMessage(text)  
-        sleep(0.1)
 
     close_camera()  
 
