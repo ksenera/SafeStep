@@ -6,7 +6,7 @@ import subprocess
 
 
 
-AUDIO_QUEUE = queue.Queue()
+AUDIO_QUEUE = queue.Queue(maxsize=1)
 
 def pushAudioMessage(message: str):
     while not AUDIO_QUEUE.empty():
