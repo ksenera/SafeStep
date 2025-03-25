@@ -7,10 +7,13 @@ def sendUARTMsg(message: str, uart: serial.Serial = default_uart):
     msg = message + "\n"
     # Encode message and send
     uart.write(msg.encode())
+    
 
 def readUARTMsg(uart: serial.Serial = default_uart) -> str | None:
     if uart.readable():
-        received = uart.readline()
+        received = uart.readline().decode()
+        if received == "":
+            return None
         return received
     
     return None
@@ -24,3 +27,9 @@ def getDistanceData(uart: serial.Serial = default_uart) -> list | None:
         data = data.split(",")
 
     return data
+
+if __name__ == "__main__":
+    while True:
+        text = readUARTMsg()
+        if text is not None:
+            print(text)

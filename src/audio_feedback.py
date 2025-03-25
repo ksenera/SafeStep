@@ -22,7 +22,7 @@ async def speak(text: str):
     subprocess.run(["flite", "-voice", "rms", "-t", text])
 
 
-engine = pyttsx3.init()
+# engine = pyttsx3.init()
 categories = ["low Furniture", "high Furniture", "doorways"]
 event = Event()
 

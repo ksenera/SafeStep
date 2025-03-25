@@ -105,7 +105,6 @@ pysmbc==1.0.23
 python-apt==2.6.0
 python-dateutil==2.9.0.post0
 python-dotenv==0.21.0
-python-espeak==0.5
 python-prctl==1.8.1
 pyttsx3==2.98
 pytz==2022.7.1

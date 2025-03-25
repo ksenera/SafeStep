@@ -157,7 +157,8 @@ def handleCamera():
     '''
 
     while not THREAD_KILL.is_set():
-        local_sensor_distance = ucomm.getDistanceData()
+        # local_sensor_distance = ucomm.getDistanceData()
+        local_sensor_distance = [123, 456, 789]
         if local_sensor_distance is None:
             continue
 
@@ -188,7 +189,7 @@ def handleCamera():
 
                 # directions 
                 """sensor index here isn't safe. list size could change in the future"""
-                third = local_sensor_distance // 3
+                third = len(local_sensor_distance) // 3
                 if cx < left_boundary:
                     direction = "left"
                     sensor_start_range = 0
@@ -204,8 +205,13 @@ def handleCamera():
                 
                 
                 # Find distance related to object (guess closest)
-                dist_mm = (min(local_sensor_distance[i]) for i in range(sensor_start_range, sensor_stop_range) if local_sensor_distance[i] > 0)
-                
+                # dist_mm = (min(local_sensor_distance[i]) for i in range(sensor_start_range, sensor_stop_range) if local_sensor_distance[i] > 0)
+                dist_mm = OUTER_RANGE_MM + 1
+                for i in range(sensor_start_range, sensor_stop_range):
+                    if local_sensor_distance[i] <= 0:
+                        continue
+                    dist_mm = min(dist_mm, local_sensor_distance[i])
+
                 # Objects might be detected outside of the range we care about
                 # continue if that is the case
                 if dist_mm > OUTER_RANGE_MM:
@@ -214,6 +220,7 @@ def handleCamera():
                 text = f"{label} {direction} {dist_mm} mm"
                 # here we can add the object to the queue for audio feedback
                 # pushAudioMessage(text)
+                print(text)
                 ucomm.sendUARTMsg(text)
             
     close_camera()  
@@ -243,3 +250,8 @@ def initialize_all():
     SENSOR_DISTANCE = [0 for _ in range(len(SENSOR_LIST))]
 
     return
+
+if __name__ == "__main__":
+    camera_init()
+    detection_model_init()
+    handleCamera()
