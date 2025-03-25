@@ -204,7 +204,7 @@ def handleCamera():
                 
                 
                 # Find distance related to object (guess closest)
-                dist_mm = (min(local_sensor_distance[i]) for i in range(sensor_start_range, sensor_stop_range))
+                dist_mm = (min(local_sensor_distance[i]) for i in range(sensor_start_range, sensor_stop_range) if local_sensor_distance[i] > 0)
                 
                 # Objects might be detected outside of the range we care about
                 # continue if that is the case
