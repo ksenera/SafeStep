@@ -32,6 +32,7 @@ def getDistanceData(uart: serial.Serial = default_uart) -> list | None:
     if data is not None:
         data = data.decode()
         data = data.split(",")
+        data = [int(x) for x in data]
 
     return data
 
