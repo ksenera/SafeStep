@@ -1,5 +1,5 @@
 import signal
-from thread_workers import THREAD_KILL, initialize_all, handleCamera, handleTOF, handleFeedback
+from thread_workers import THREAD_KILL, initialize_all, handleCamera, handleTOF, handleAudioFeedback, handleVibrationalFeedback
 import threading
 import asyncio
 
@@ -13,9 +13,9 @@ def main():
 
     initialize_all()
 
-    t1 = threading.Thread(target=handleCamera)
+    t1 = threading.Thread(target=handleAudioFeedback)
     t2 = threading.Thread(target=handleTOF)
-    t3 = threading.Thread(target=asyncio.run, args=(handleFeedback(),))
+    t3 = threading.Thread(target=asyncio.run, args=((handleVibrationalFeedback()),))
 
     t1.start()
     t2.start()

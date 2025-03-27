@@ -77,9 +77,36 @@ def determine_vibrator_index(sensor_index: int, sensor_count: int, digital_devic
     Handles all feedback operations. Currently this is an audio feedback opertaion
     as well as pulsing of vibrational sensors.
 """
-async def handleFeedback():
-    vibrator_tasks: list = [None for i in range(len(DEVICE_LIST))]
-    speak_task: asyncio.Task[None] = None
+# async def handleFeedback():
+#     vibrator_tasks: list = [None for i in range(len(DEVICE_LIST))]
+#     speak_task: asyncio.Task[None] = None
+
+#     while not THREAD_KILL.is_set():
+#         if len(SENSOR_DISTANCE) > 0:
+#             print(SENSOR_DISTANCE)
+
+#         for index, device in enumerate(DEVICE_LIST):
+#             if THREAD_KILL.is_set():
+#                 break
+
+#             if vibrator_tasks[index] is None or vibrator_tasks[index].done() and VIBRATOR_DURATIONS[index] > 0:
+#                 vibrator_tasks[index] = asyncio.create_task(timed_vibrator_pulse(VIBRATOR_DURATIONS[index], [device]))
+
+#         '''We need to consume some text and pass it into the speak function DONE'''
+#         '''Pulls whatever is on the queue in audio_feedback.py'''
+#         if speak_task is None or speak_task.done():
+#             # tts = getNextAudioMessage()
+#             tts = ucomm.readUARTMsg()
+#             if tts:
+#                 speak_task = asyncio.create_task(speak(tts))
+
+#         await asyncio.sleep(0.1)
+
+#     shutDownOutputDevices(DEVICE_LIST)
+    
+    
+def handleVibrationalFeedback():
+    vibrator_tasks: list = [None for _ in range(len(DEVICE_LIST))]
 
     while not THREAD_KILL.is_set():
         if len(SENSOR_DISTANCE) > 0:
@@ -91,18 +118,18 @@ async def handleFeedback():
 
             if vibrator_tasks[index] is None or vibrator_tasks[index].done() and VIBRATOR_DURATIONS[index] > 0:
                 vibrator_tasks[index] = asyncio.create_task(timed_vibrator_pulse(VIBRATOR_DURATIONS[index], [device]))
+    
+        asyncio.sleep(0.01)
+    
+    shutDownOutputDevices(DEVICE_LIST)
 
-        '''We need to consume some text and pass it into the speak function DONE'''
-        '''Pulls whatever is on the queue in audio_feedback.py'''
-        if speak_task is None or speak_task.done():
-            # tts = getNextAudioMessage()
+
+def handleAudioFeedback():
+    while not THREAD_KILL.is_set():
             tts = ucomm.readUARTMsg()
             if tts:
-                speak_task = asyncio.create_task(speak(tts))
+                speak(tts)
 
-        await asyncio.sleep(0.1)
-
-    shutDownOutputDevices(DEVICE_LIST)
 
 
 """
@@ -240,8 +267,8 @@ def initialize_all():
     DEVICE_LIST = initializeOutputDevices()
     '''I believe this calls another function with enters an infinite loop, we should have this changed'''
     ''' camera_init() no longer has infinite loop'''
-    camera_init()
-    detection_model_init()
+    # camera_init()
+    # detection_model_init()
 
     global VIBRATOR_DURATIONS
     VIBRATOR_DURATIONS = [0 for _ in range(len(DEVICE_LIST))]
