@@ -15,7 +15,7 @@ def sendUARTMsg(message: str, uart: serial.Serial = default_uart):
 def readUARTMsg(uart: serial.Serial = default_uart) -> str | None:
     try:
         if uart.readable() and uart.in_waiting > 0:
-            received = uart.readline().decode()
+            received = uart.readline().decode().strip("\n")
             if received == "":
                 return None
             return received
