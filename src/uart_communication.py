@@ -1,6 +1,9 @@
 import serial
+from time import sleep
 
-default_uart = serial.Serial("/dev/serial0", timeout=1)
+default_uart = serial.Serial("/dev/serial0")
+
+print(default_uart.is_open)
 
 def sendUARTMsg(message: str, uart: serial.Serial = default_uart):
     # Add the newline as a signal for the end of message
@@ -10,11 +13,15 @@ def sendUARTMsg(message: str, uart: serial.Serial = default_uart):
     
 
 def readUARTMsg(uart: serial.Serial = default_uart) -> str | None:
-    if uart.readable():
-        received = uart.readline().decode()
-        if received == "":
-            return None
-        return received
+    try:
+        if uart.readable() and uart.in_waiting > 0:
+            received = uart.readline().decode()
+            if received == "":
+                return None
+            return received
+    except Exception as ex:
+        print(ex)
+        return None
     
     return None
 
@@ -33,3 +40,4 @@ if __name__ == "__main__":
         text = readUARTMsg()
         if text is not None:
             print(text)
+        sleep(0.001)
