@@ -6,17 +6,17 @@ import subprocess
 
 
 
-AUDIO_QUEUE = queue.Queue(maxsize=1)
+# AUDIO_QUEUE = queue.Queue(maxsize=1)
 
-def pushAudioMessage(message: str):
-    while not AUDIO_QUEUE.empty():
-        AUDIO_QUEUE.get_nowait()
-    AUDIO_QUEUE.put(message)
+# def pushAudioMessage(message: str):
+#     while not AUDIO_QUEUE.empty():
+#         AUDIO_QUEUE.get_nowait()
+#     AUDIO_QUEUE.put(message)
 
-def getNextAudioMessage() -> str | None:
-    if AUDIO_QUEUE.empty():
-        return None
-    return AUDIO_QUEUE.get()
+# def getNextAudioMessage() -> str | None:
+#     if AUDIO_QUEUE.empty():
+#         return None
+#     return AUDIO_QUEUE.get()
 
 async def speak(text: str):
     subprocess.run(["flite", "-voice", "rms", "-t", text])

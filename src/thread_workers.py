@@ -1,7 +1,7 @@
 import asyncio
 from vibration_feedback import timed_vibrator_pulse, initializeOutputDevices, shutDownOutputDevices
 from Sensor import initialize_all_sensors, shutdown_all_sensors
-from audio_feedback import speak, pushAudioMessage, getNextAudioMessage
+from audio_feedback import speak
 import RPi.GPIO as GPIO
 from time import time, sleep
 import uart_communication as ucomm
@@ -157,8 +157,8 @@ def handleCamera():
     '''
 
     while not THREAD_KILL.is_set():
-        # local_sensor_distance = ucomm.getDistanceData()
-        local_sensor_distance = [123, 456, 789]
+        local_sensor_distance = ucomm.getDistanceData()
+        # local_sensor_distance = [123, 456, 789]
         if local_sensor_distance is None:
             continue
 
@@ -255,3 +255,4 @@ if __name__ == "__main__":
     camera_init()
     detection_model_init()
     handleCamera()
+    # handleFeedback()

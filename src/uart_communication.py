@@ -7,7 +7,7 @@ print(default_uart.is_open)
 
 def sendUARTMsg(message: str, uart: serial.Serial = default_uart):
     # Add the newline as a signal for the end of message
-    msg = message + "\n"
+    msg = message
     # Encode message and send
     uart.write(msg.encode())
     
