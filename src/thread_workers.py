@@ -105,21 +105,18 @@ def determine_vibrator_index(sensor_index: int, sensor_count: int, digital_devic
 #     shutDownOutputDevices(DEVICE_LIST)
     
     
-def handleVibrationalFeedback():
+async def handleVibrationalFeedback():
     vibrator_tasks: list = [None for _ in range(len(DEVICE_LIST))]
 
     while not THREAD_KILL.is_set():
-        if len(SENSOR_DISTANCE) > 0:
-            print(SENSOR_DISTANCE)
-
         for index, device in enumerate(DEVICE_LIST):
             if THREAD_KILL.is_set():
                 break
 
-            if vibrator_tasks[index] is None or vibrator_tasks[index].done() and VIBRATOR_DURATIONS[index] > 0:
+            if (vibrator_tasks[index] is None or vibrator_tasks[index].done()) and VIBRATOR_DURATIONS[index] > 0.0:
                 vibrator_tasks[index] = asyncio.create_task(timed_vibrator_pulse(VIBRATOR_DURATIONS[index], [device]))
     
-        asyncio.sleep(0.01)
+        await asyncio.sleep(0.1)
     
     shutDownOutputDevices(DEVICE_LIST)
 
@@ -129,7 +126,6 @@ def handleAudioFeedback():
             tts = ucomm.readUARTMsg()
             if tts:
                 speak(tts)
-
 
 
 """
@@ -146,12 +142,13 @@ def handleTOF():
         previous_distance.append(-1000)
 
     while not THREAD_KILL.is_set():
+        print(SENSOR_DISTANCE)
         for index, sensor in enumerate(SENSOR_LIST):
             if THREAD_KILL.is_set():
                 break
 
             distance = sensor.get_distance()
-            print(distance)
+            
             # if distance is less than zero we assume it's a bad reading
             if distance < 0:
                 continue
@@ -159,7 +156,6 @@ def handleTOF():
 
             # here store the latest distance for whichever sensor 
             SENSOR_DISTANCE[index] = distance
-            print(f'Sensor[{index}]: {distance}mm')
 
             '''I'm not sure how this needs to change just yet to make things work with audio code SEE RIGHT ABOVE'''
             # sensor_distance_queue.put(distance)
@@ -170,8 +166,10 @@ def handleTOF():
             if distance > previous_distance[index] + 100 or distance < previous_distance[index] - 100:
                 VIBRATOR_DURATIONS[device_index] = delay
 
-        msg = ",".join(SENSOR_DISTANCE)
+        msg = ",".join(str(x) for x in SENSOR_DISTANCE)
         ucomm.sendUARTMsg(msg)
+
+        sleep(0.005)
 
     shutdown_all_sensors(SENSOR_LIST)
 

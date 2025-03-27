@@ -8,6 +8,9 @@ from gpiozero import DigitalOutputDevice
 import time
 import asyncio
 
+DEVICE_LIST = []
+
+VIBRATOR_DURATIONS = []
 
 defaultPinList = [
     18,
@@ -98,6 +101,13 @@ def error_pulse(gpio_pin1, gpio_pin2, gpio_pin3):
 """
 
 async def timed_vibrator_pulse (timespan: int, deviceList: list[DigitalOutputDevice]) -> None:
+    high = 1.6
+    low = 0.1
+    
+    if timespan > high:
+        timespan = high
+    elif timespan < low:
+        timespan = low
 
     for device in deviceList:
         device.on()
@@ -106,6 +116,8 @@ async def timed_vibrator_pulse (timespan: int, deviceList: list[DigitalOutputDev
 
     for device in deviceList:
         device.off()
+
+    await asyncio.sleep(0.01)
 
 
 
@@ -131,15 +143,16 @@ def shutDownOutputDevices(device_list: list[DigitalOutputDevice]) -> None:
         device.close()
         
     device_list.clear()
-        
+
+
+    vibrator_tasks: list = [None for _ in range(len(DEVICE_LIST))]
+
+
+    
 
 if __name__ == "__main__":
-    
-    devicelist = initializeOutputDevices(None)
-
-    while True:
-        timed_vibrator_pulse(1, devicelist)
-        time.sleep(1)
-    
-
-
+    DEVICE_LIST = initializeOutputDevices()
+    vibrator_tasks: list = [None for _ in range(len(DEVICE_LIST))]
+    for index, device in enumerate(DEVICE_LIST):
+        if (vibrator_tasks[index] is None or vibrator_tasks[index].done()):
+            vibrator_tasks[index] = asyncio.create_task(timed_vibrator_pulse(VIBRATOR_DURATIONS[index], [device]))

@@ -9,13 +9,13 @@ def cleanup_processes(signum, frame):
 
 
 def main():
-    signal.signal(signal.SIGTSTP, cleanup_processes)
+    signal.signal(signal.SIGINT, cleanup_processes)
 
     initialize_all()
 
     t1 = threading.Thread(target=handleAudioFeedback)
     t2 = threading.Thread(target=handleTOF)
-    t3 = threading.Thread(target=asyncio.run, args=((handleVibrationalFeedback()),))
+    t3 = threading.Thread(target=asyncio.run, args=(handleVibrationalFeedback(),))
 
     t1.start()
     t2.start()
