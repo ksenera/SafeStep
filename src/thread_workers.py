@@ -224,16 +224,19 @@ def handleCamera():
     '''
     obj_dictionary = dict()
 
-    while not THREAD_KILL.is_set():
-        local_sensor_distance = ucomm.getDistanceData()
-        # local_sensor_distance = [123, 456, 789]
-        if local_sensor_distance is None:
-            continue
+    try: 
+        # checks once only 
+        while not THREAD_KILL.is_set():
 
-        # next capture a frame from the camera
-        frame = capture_frame()
-        if frame is None:
-            continue
+            local_sensor_distance = ucomm.getDistanceData()
+            # local_sensor_distance = [123, 456, 789]
+            if local_sensor_distance is None:
+                continue
+
+            # next capture a frame from the camera
+            frame = capture_frame()
+            if frame is None:
+                continue
 
         # first run detection so boundary boxes can be drawn 
         detections = detect_object(frame)
