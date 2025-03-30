@@ -205,7 +205,9 @@ def handleObjectDetails(detected_objects, local_sensor_distance, frame, outer_ra
     # loop through all detected objects and get message 
     for obj in detected_objects:
         message = processObjectPosition(obj, local_sensor_distance, frame_width, outer_range)
-        
+        if not message:
+            continue
+
         current_time = datetime.now()
         msg_no_dist = message.split(" ")
         msg_no_dist = f"{msg_no_dist[0]} {msg_no_dist[1]}"
