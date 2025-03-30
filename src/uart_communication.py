@@ -2,6 +2,8 @@ import serial
 from time import sleep
 
 default_uart = serial.Serial("/dev/serial0")
+default_uart.reset_input_buffer()
+default_uart.reset_output_buffer()
 
 print(default_uart.is_open)
 
