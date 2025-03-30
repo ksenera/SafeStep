@@ -6,7 +6,7 @@ import config
 default_uart = serial.Serial(config.uart_port)
 default_uart.reset_input_buffer()
 default_uart.reset_output_buffer()
-
+print(default_uart.is_open)
 def sendUARTMsg(message: str, uart: serial.Serial = default_uart):
     # Add the newline as a signal for the end of message
     msg = message + "\n"

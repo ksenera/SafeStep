@@ -127,13 +127,14 @@ def show_frame(frame):
     if thread_workers.THREAD_KILL.is_set():
         return True
     
-    cv2.imshow("livestream", frame)
-    key = cv2.waitKey(1) & 0xFF
+    if config.livestream:
+        cv2.imshow("livestream", frame)
+        key = cv2.waitKey(1) & 0xFF
 
-    if cv2.getWindowProperty("livestream", cv2.WND_PROP_VISIBLE) < 1:
-        return True
+        if cv2.getWindowProperty("livestream", cv2.WND_PROP_VISIBLE) < 1:
+            return True
     
-    return key == ord('q')
+        return key == ord('q')
 
 """
     close camera

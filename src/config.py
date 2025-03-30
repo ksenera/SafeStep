@@ -1,3 +1,10 @@
+import argparse
+
+parser = argparse.ArgumentParser(description="Livestream_toggler")
+parser.add_argument("--livestream", action="store_true", default=False)
+livestream = parser.parse_args().livestream
+
+
 default_pin_list = [
     18,
     24,

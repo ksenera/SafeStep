@@ -93,7 +93,7 @@ def handleAudioFeedback():
         msg = ucomm.readUARTMsg()
         if not msg:
             continue
-
+        print(msg)
         speak(msg)
 
 
@@ -214,6 +214,7 @@ def handleObjectDetails(detected_objects, local_sensor_distance, frame, outer_ra
             obj_dictionary[msg_no_dist] = current_time
             print(message)
             ucomm.sendUARTMsg(message)
+        
 
 
 def handleCamera():
