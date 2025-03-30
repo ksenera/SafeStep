@@ -122,10 +122,24 @@ async def handleVibrationalFeedback():
 
 
 def handleAudioFeedback():
+    active_objects = set()  # Initialize active_objects as an empty set
     while not THREAD_KILL.is_set():
-            tts = ucomm.readUARTMsg()
-            if tts:
-                speak(tts)
+        msg = ucomm.readUARTMsg()
+        if not msg:
+            continue
+            
+        if msg.startswith("NEW:"):
+            objects = msg[4:].split(',')
+            for obj in objects:
+                if obj not in active_objects:
+                    speak(obj)
+                    active_objects.add(obj)
+                    
+        elif msg.startswith("GONE:"):
+            objects = msg[5:].split(',')
+            for obj in objects:
+                if obj in active_objects:
+                    active_objects.remove(obj)
 
 
 """
@@ -180,6 +194,8 @@ def handleCamera():
     From this point we can take that info and put it into the list/queue that will handle the 
     feedback in the handleFeedback function?
     '''
+    global previous_objects 
+    previous_objects = set()
 
     while not THREAD_KILL.is_set():
         local_sensor_distance = ucomm.getDistanceData()
@@ -199,7 +215,20 @@ def handleCamera():
         quit_or_annotate = show_frame(frame)
         if quit_or_annotate:
             break
+
+        # check if there are unique object classes 
+        current_objects = {obj["label"].lower() for obj in detected_objects}
+        # see if there are any changes to what is being detected 
+        new_objects = current_objects - previous_objects
+        removed_objects = previous_objects - current_objects
         
+        #UART updates 
+        if new_objects:
+            ucomm.sendUARTMsg(f"New: {', '.join(new_objects)}")
+        if removed_objects:
+            ucomm.sendUARTMsg(f"Removed: {', '.join(removed_objects)}")
+        previous_objects = current_objects
+
         # check if any sensor is under 3000 mm range 
         in_range = any(dist < OUTER_RANGE_MM for dist in local_sensor_distance)
         if in_range and detected_objects:
@@ -250,6 +279,11 @@ def handleCamera():
             
     close_camera()  
 
+"""
+    Handles presense of the objects by tracking them and then sends UART updates 
+"""
+def handleObjectPresence(detect_objects, previous_objects):
+    return current_objects
 
 """
     Initializes all devices preparing them for ranging and feedback operations
