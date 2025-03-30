@@ -15,3 +15,7 @@ model_name = "efficientdet.flite"
 inner_range = 500
 
 outer_range = 3000
+
+uart_port = "/dev/serial0"
+# in seconds
+message_repeat_delay = 5
