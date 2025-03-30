@@ -5,6 +5,7 @@ from audio_feedback import speak
 import RPi.GPIO as GPIO
 from time import time, sleep
 import uart_communication as ucomm
+import config
 
 from Camera import (
     camera_init,
@@ -24,10 +25,10 @@ THREAD_KILL: Event = Event()
 # Vibrator durations list holds the duration that a vibrator will sleep before turning off
 VIBRATOR_DURATIONS = []
 # 3 meters
-OUTER_RANGE_MM = 3000
+OUTER_RANGE_MM = config.outer_range
 # Anything below inner range will be used to 
 # send fastest vibrational pulse
-INNER_RANGE_MM = 500
+INNER_RANGE_MM = config.inner_range
 # Sensor list holds all the ToF sensor objects
 SENSOR_LIST = []
 # Device list holds all digital output devices
@@ -128,14 +129,16 @@ def handleAudioFeedback():
         if not msg:
             continue
             
-        if msg.startswith("NEW:"):
+        if msg.startswith("New:"):
             objects = msg[4:].split(',')
             for obj in objects:
                 if obj not in active_objects:
                     speak(obj)
                     active_objects.add(obj)
-                    
-        elif msg.startswith("GONE:"):
+        
+        # in case of occlusion and reset state after object leaves frame but is redetected again 
+        # the set should only track current relevant obj in active frame 
+        elif msg.startswith("Removed:"):
             objects = msg[5:].split(',')
             for obj in objects:
                 if obj in active_objects:
@@ -194,15 +197,15 @@ def handleTOF():
 def handleObjectPresence(detected_objects, previous_objects):
     # check if there are unique object classes 
     current_objects = {obj["label"].lower() for obj in detected_objects}
-    # see if there are any changes to what is being detected 
+    # see if there are any changes to what is being detected
     new_objects = current_objects - previous_objects
     removed_objects = previous_objects - current_objects
     
     #UART updates 
     if new_objects:
-        ucomm.sendUARTMsg(f"New: {', '.join(new_objects)}")
+        ucomm.sendUARTMsg(f"New: {','.join(new_objects)}")
     if removed_objects:
-        ucomm.sendUARTMsg(f"Removed: {', '.join(removed_objects)}")
+        ucomm.sendUARTMsg(f"Removed: {','.join(removed_objects)}")
 
     return current_objects
 
@@ -251,7 +254,7 @@ def processObjectPosition(obj, local_sensor_distance, frame_width, outer_range):
 """
     Handles the object detail processing to see if it's within sensor range. It also calculates
     positioning and distance for each valid object. Sends formatted message via UART for the 
-    audio and vibrational feedback.
+    audio and vibrational feedback. 
 """
 def handleObjectDetails(detected_objects, local_sensor_distance, frame, outer_range):
     if not detected_objects:

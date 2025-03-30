@@ -7,6 +7,7 @@ from mediapipe.tasks.python import vision
 import cv2
 import numpy as np
 import time
+import config
 
 # Initialize the camera object
 from picamera2 import Picamera2, Preview
@@ -37,7 +38,7 @@ def camera_init():
 def detection_model_init():
     global detector
     #Initialize inference options for the Mediapipe object
-    base_options = python.BaseOptions(model_asset_path = 'efficientdet.tflite')
+    base_options = python.BaseOptions(model_asset_path = config.model_name)
     options = vision.ObjectDetectorOptions(base_options=base_options,
                                         score_threshold=0.5)
 

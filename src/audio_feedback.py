@@ -16,7 +16,7 @@ import subprocess
 #         return None
 #     return AUDIO_QUEUE.get()
 
-async def speak(text: str):
+def speak(text: str):
     subprocess.run(["flite", "-voice", "rms", "-t", text])
 
 
