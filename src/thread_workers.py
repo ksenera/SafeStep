@@ -238,18 +238,18 @@ def handleCamera():
             if frame is None:
                 continue
 
-        # first run detection so boundary boxes can be drawn 
-        detections = detect_object(frame)
-        # then draw the boxes on the image
-        detected_objects = draw_boxes(frame, detections)
-        # show fully annotated frame but if user clicks q then break
-        quit_or_annotate = show_frame(frame)
-        if quit_or_annotate:
-            break
-        
-        handleObjectDetails(detected_objects, local_sensor_distance, frame, OUTER_RANGE_MM, obj_dictionary)
-        
-    close_camera()
+            # first run detection so boundary boxes can be drawn 
+            detections = detect_object(frame)
+            # then draw the boxes on the image
+            detected_objects = draw_boxes(frame, detections)
+            # show fully annotated frame but if user clicks q then break
+            quit_or_annotate = show_frame(frame)
+            if quit_or_annotate:
+                break
+            
+            handleObjectDetails(detected_objects, local_sensor_distance, frame, OUTER_RANGE_MM, obj_dictionary)
+    finally:    
+        close_camera()
 
 
 """

@@ -54,6 +54,9 @@ def detection_model_init():
 def capture_frame():
     global picam2
     # add a check for if the camera is initialized after
+    # if thread_workers.THREAD_KILL.is_set():
+    #     return True
+    
     frame = picam2.capture_array()
     return frame
 
