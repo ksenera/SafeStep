@@ -188,6 +188,91 @@ def handleTOF():
     shutdown_all_sensors(SENSOR_LIST)
 
 
+"""
+    Handles presense of the objects by tracking them and then sends UART updates 
+"""
+def handleObjectPresence(detected_objects, previous_objects):
+    # check if there are unique object classes 
+    current_objects = {obj["label"].lower() for obj in detected_objects}
+    # see if there are any changes to what is being detected 
+    new_objects = current_objects - previous_objects
+    removed_objects = previous_objects - current_objects
+    
+    #UART updates 
+    if new_objects:
+        ucomm.sendUARTMsg(f"New: {', '.join(new_objects)}")
+    if removed_objects:
+        ucomm.sendUARTMsg(f"Removed: {', '.join(removed_objects)}")
+
+    return current_objects
+
+"""
+    Handles object position on camera and distance to the sensors by calculating boundaries. 
+"""
+def processObjectPosition(obj, local_sensor_distance, frame_width, outer_range):
+    label = obj["label"]
+    (cx, _) = obj["centroid"]
+
+    third = len(local_sensor_distance) // 3
+    left_boundary = frame_width / 3
+    right_boundary = 2 * frame_width / 3
+
+    # directions 
+    #sensor index here isn't safe. list size could change in the future
+    if cx < left_boundary:
+        direction = "left"
+        sensor_start = 0
+        sensor_end = third * 1
+    elif cx > right_boundary:
+        direction = "right"
+        sensor_start = third * 2
+        sensor_end = third * 3
+    else:
+        direction = "in front"
+        sensor_start = third * 1
+        sensor_end = third * 2
+    
+    
+    # Find distance related to object (guess closest)
+    # dist_mm = (min(local_sensor_distance[i]) for i in range(sensor_start_range, sensor_stop_range) if local_sensor_distance[i] > 0)
+    dist_mm = OUTER_RANGE_MM + 1
+    for i in range(sensor_start, sensor_end):
+        if local_sensor_distance[i] <= 0:
+            continue
+        dist_mm = min(dist_mm, local_sensor_distance[i])
+
+    # Objects might be detected outside of the range we care about
+    # continue if that is the case
+    if dist_mm > outer_range:
+        return None
+
+    return f"{label} {direction} {dist_mm} mm"
+
+"""
+    Handles the object detail processing to see if it's within sensor range. It also calculates
+    positioning and distance for each valid object. Sends formatted message via UART for the 
+    audio and vibrational feedback.
+"""
+def handleObjectDetails(detected_objects, local_sensor_distance, frame, outer_range):
+    if not detected_objects:
+        return
+    
+    # check if any sensor is under 3000 mm range
+    in_range = any(dist < outer_range for dist in local_sensor_distance)
+    if not in_range:
+        return
+    
+    # get the width of the frame for position calculations
+    frame_width = frame.shape[1]
+
+    # loop through all detected objects and get message 
+    for obj in detected_objects:
+        message = processObjectPosition(obj, local_sensor_distance, frame_width, outer_range)
+        if message:
+            print(message)  
+            ucomm.sendUARTMsg(message)
+
+
 def handleCamera():
     '''
     Can we just have detect object detecting 1 object then returning information here?
@@ -207,6 +292,7 @@ def handleCamera():
         frame = capture_frame()
         if frame is None:
             continue
+
         # first run detection so boundary boxes can be drawn 
         detections = detect_object(frame)
         # then draw the boxes on the image
@@ -216,74 +302,73 @@ def handleCamera():
         if quit_or_annotate:
             break
 
-        # check if there are unique object classes 
-        current_objects = {obj["label"].lower() for obj in detected_objects}
-        # see if there are any changes to what is being detected 
-        new_objects = current_objects - previous_objects
-        removed_objects = previous_objects - current_objects
+        previous_objects = handleObjectPresence(detected_objects, previous_objects)
+        handleObjectDetails(detected_objects, local_sensor_distance, frame, OUTER_RANGE_MM)
         
-        #UART updates 
-        if new_objects:
-            ucomm.sendUARTMsg(f"New: {', '.join(new_objects)}")
-        if removed_objects:
-            ucomm.sendUARTMsg(f"Removed: {', '.join(removed_objects)}")
-        previous_objects = current_objects
+    close_camera()
+        # # check if there are unique object classes 
+        # current_objects = {obj["label"].lower() for obj in detected_objects}
+        # # see if there are any changes to what is being detected 
+        # new_objects = current_objects - previous_objects
+        # removed_objects = previous_objects - current_objects
+        
+        # #UART updates 
+        # if new_objects:
+        #     ucomm.sendUARTMsg(f"New: {', '.join(new_objects)}")
+        # if removed_objects:
+        #     ucomm.sendUARTMsg(f"Removed: {', '.join(removed_objects)}")
+        # previous_objects = current_objects
 
-        # check if any sensor is under 3000 mm range 
-        in_range = any(dist < OUTER_RANGE_MM for dist in local_sensor_distance)
-        if in_range and detected_objects:
-            # add the left, right or center 
-            width = frame.shape[1]
-            left_boundary = width / 3
-            right_boundary = 2 * width / 3
+        # # check if any sensor is under 3000 mm range 
+        # in_range = any(dist < OUTER_RANGE_MM for dist in local_sensor_distance)
+        # if in_range and detected_objects:
+        #     # add the left, right or center 
+        #     width = frame.shape[1]
+        #     left_boundary = width / 3
+        #     right_boundary = 2 * width / 3
 
-            for obj in detected_objects:
-                label = obj["label"]
-                (cx, _) = obj["centroid"]
+        #     for obj in detected_objects:
+        #         label = obj["label"]
+        #         (cx, _) = obj["centroid"]
 
-                # directions 
-                """sensor index here isn't safe. list size could change in the future"""
-                third = len(local_sensor_distance) // 3
-                if cx < left_boundary:
-                    direction = "left"
-                    sensor_start_range = 0
-                    sensor_stop_range = third * 1
-                elif cx > right_boundary:
-                    direction = "right"
-                    sensor_start_range = third * 2
-                    sensor_stop_range = third * 3
-                else:
-                    direction = "in front"
-                    sensor_start_range = third * 1
-                    sensor_stop_range = third * 2
+        #         # directions 
+        #         """sensor index here isn't safe. list size could change in the future"""
+        #         third = len(local_sensor_distance) // 3
+        #         if cx < left_boundary:
+        #             direction = "left"
+        #             sensor_start_range = 0
+        #             sensor_stop_range = third * 1
+        #         elif cx > right_boundary:
+        #             direction = "right"
+        #             sensor_start_range = third * 2
+        #             sensor_stop_range = third * 3
+        #         else:
+        #             direction = "in front"
+        #             sensor_start_range = third * 1
+        #             sensor_stop_range = third * 2
                 
                 
-                # Find distance related to object (guess closest)
-                # dist_mm = (min(local_sensor_distance[i]) for i in range(sensor_start_range, sensor_stop_range) if local_sensor_distance[i] > 0)
-                dist_mm = OUTER_RANGE_MM + 1
-                for i in range(sensor_start_range, sensor_stop_range):
-                    if local_sensor_distance[i] <= 0:
-                        continue
-                    dist_mm = min(dist_mm, local_sensor_distance[i])
+        #         # Find distance related to object (guess closest)
+        #         # dist_mm = (min(local_sensor_distance[i]) for i in range(sensor_start_range, sensor_stop_range) if local_sensor_distance[i] > 0)
+        #         dist_mm = OUTER_RANGE_MM + 1
+        #         for i in range(sensor_start_range, sensor_stop_range):
+        #             if local_sensor_distance[i] <= 0:
+        #                 continue
+        #             dist_mm = min(dist_mm, local_sensor_distance[i])
 
-                # Objects might be detected outside of the range we care about
-                # continue if that is the case
-                if dist_mm > OUTER_RANGE_MM:
-                    continue
+        #         # Objects might be detected outside of the range we care about
+        #         # continue if that is the case
+        #         if dist_mm > OUTER_RANGE_MM:
+        #             continue
 
-                text = f"{label} {direction} {dist_mm} mm"
+        #         text = f"{label} {direction} {dist_mm} mm"
                 # here we can add the object to the queue for audio feedback
                 # pushAudioMessage(text)
-                print(text)
-                ucomm.sendUARTMsg(text)
+                # print(text)
+                # ucomm.sendUARTMsg(text)
             
-    close_camera()  
+    # close_camera()  
 
-"""
-    Handles presense of the objects by tracking them and then sends UART updates 
-"""
-def handleObjectPresence(detect_objects, previous_objects):
-    return current_objects
 
 """
     Initializes all devices preparing them for ranging and feedback operations
