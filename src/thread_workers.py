@@ -122,20 +122,20 @@ async def handleVibrationalFeedback():
 
 
 def handleAudioFeedback():
-    active_objects = set()  # Initialize active_objects as an empty set
+    active_objects = set()  
     while not THREAD_KILL.is_set():
         msg = ucomm.readUARTMsg()
         if not msg:
             continue
             
-        if msg.startswith("NEW:"):
+        if msg.startswith("New:"):
             objects = msg[4:].split(',')
             for obj in objects:
                 if obj not in active_objects:
                     speak(obj)
                     active_objects.add(obj)
                     
-        elif msg.startswith("GONE:"):
+        elif msg.startswith("Removed:"):
             objects = msg[5:].split(',')
             for obj in objects:
                 if obj in active_objects:
@@ -282,30 +282,37 @@ def handleCamera():
     global previous_objects 
     previous_objects = set()
 
-    while not THREAD_KILL.is_set():
-        local_sensor_distance = ucomm.getDistanceData()
-        # local_sensor_distance = [123, 456, 789]
-        if local_sensor_distance is None:
-            continue
+    try: 
+        while not THREAD_KILL.is_set():
+            if THREAD_KILL.is_set():
+                break
 
-        # next capture a frame from the camera
-        frame = capture_frame()
-        if frame is None:
-            continue
+            local_sensor_distance = ucomm.getDistanceData()
+            # local_sensor_distance = [123, 456, 789]
+            if local_sensor_distance is None:
+                continue
 
-        # first run detection so boundary boxes can be drawn 
-        detections = detect_object(frame)
-        # then draw the boxes on the image
-        detected_objects = draw_boxes(frame, detections)
-        # show fully annotated frame but if user clicks q then break
-        quit_or_annotate = show_frame(frame)
-        if quit_or_annotate:
-            break
+            # next capture a frame from the camera
+            frame = capture_frame()
+            if frame is None:
+                continue
 
-        previous_objects = handleObjectPresence(detected_objects, previous_objects)
-        handleObjectDetails(detected_objects, local_sensor_distance, frame, OUTER_RANGE_MM)
-        
-    close_camera()
+            # first run detection so boundary boxes can be drawn 
+            detections = detect_object(frame)
+            # then draw the boxes on the image
+            detected_objects = draw_boxes(frame, detections)
+
+            if THREAD_KILL.is_set():
+                break
+                
+            if show_frame(frame) or THREAD_KILL.is_set():
+                break
+
+            previous_objects = handleObjectPresence(detected_objects, previous_objects)
+            handleObjectDetails(detected_objects, local_sensor_distance, frame, OUTER_RANGE_MM)
+
+    finally:
+        close_camera()
         # # check if there are unique object classes 
         # current_objects = {obj["label"].lower() for obj in detected_objects}
         # # see if there are any changes to what is being detected 
