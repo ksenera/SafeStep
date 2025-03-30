@@ -120,6 +120,7 @@ def draw_boxes(frame, detections):
     show annotated frame and handle q to quit in OpenCV window.  
 """
 def show_frame(frame):
+    # check here if OpenCV windows hangs critial check
     if THREAD_KILL.is_set():
         return True
     
@@ -140,8 +141,6 @@ def close_camera():
         try: 
             picam2.stop()
             picam2.close()
-        except Exception as e:
-            print("Error closing camera:", e)
         finally:
             picam2 = None
     cv2.destroyAllWindows()

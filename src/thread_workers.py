@@ -130,7 +130,6 @@ def handleAudioFeedback():
             continue
             
         if msg.startswith("New:"):
-        if msg.startswith("New:"):
             objects = msg[4:].split(',')
             for obj in objects:
                 if obj not in active_objects:
@@ -287,9 +286,8 @@ def handleCamera():
     previous_objects = set()
 
     try: 
+        # checks once only 
         while not THREAD_KILL.is_set():
-            if THREAD_KILL.is_set():
-                break
 
             local_sensor_distance = ucomm.getDistanceData()
             # local_sensor_distance = [123, 456, 789]
@@ -306,10 +304,7 @@ def handleCamera():
             # then draw the boxes on the image
             detected_objects = draw_boxes(frame, detections)
 
-            if THREAD_KILL.is_set():
-                break
-                
-            if show_frame(frame) or THREAD_KILL.is_set():
+            if show_frame(frame):
                 break
 
             previous_objects = handleObjectPresence(detected_objects, previous_objects)
