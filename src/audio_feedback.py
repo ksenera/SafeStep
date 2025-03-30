@@ -4,8 +4,6 @@ import time
 import pyttsx3
 import subprocess
 
-
-
 # AUDIO_QUEUE = queue.Queue(maxsize=1)
 
 # def pushAudioMessage(message: str):
@@ -18,7 +16,7 @@ import subprocess
 #         return None
 #     return AUDIO_QUEUE.get()
 
-async def speak(text: str):
+def speak(text: str):
     subprocess.run(["flite", "-voice", "rms", "-t", text])
 
 

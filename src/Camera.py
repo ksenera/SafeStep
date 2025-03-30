@@ -7,9 +7,13 @@ from mediapipe.tasks.python import vision
 import cv2
 import numpy as np
 import time
+import config
 
 # Initialize the camera object
 from picamera2 import Picamera2, Preview
+import thread_workers 
+
+# config
 
 picam2 = None
 camera_config = None
@@ -37,7 +41,7 @@ def camera_init():
 def detection_model_init():
     global detector
     #Initialize inference options for the Mediapipe object
-    base_options = python.BaseOptions(model_asset_path = 'efficientdet.tflite')
+    base_options = python.BaseOptions(model_asset_path = config.model_name)
     options = vision.ObjectDetectorOptions(base_options=base_options,
                                         score_threshold=0.5)
 
@@ -50,6 +54,9 @@ def detection_model_init():
 def capture_frame():
     global picam2
     # add a check for if the camera is initialized after
+    # if thread_workers.THREAD_KILL.is_set():
+    #     return True
+    
     frame = picam2.capture_array()
     return frame
 
@@ -116,11 +123,18 @@ def draw_boxes(frame, detections):
     show annotated frame and handle q to quit in OpenCV window.  
 """
 def show_frame(frame):
-    cv2.imshow("livestream", frame)
-    key = cv2.waitKey(1) & 0xFF
-    if key == ord('q'):
-        return True 
-    return False
+    # check here if OpenCV windows hangs critial check
+    if thread_workers.THREAD_KILL.is_set():
+        return True
+    
+    if config.livestream:
+        cv2.imshow("livestream", frame)
+        key = cv2.waitKey(1) & 0xFF
+
+        if cv2.getWindowProperty("livestream", cv2.WND_PROP_VISIBLE) < 1:
+            return True
+    
+        return key == ord('q')
 
 """
     close camera
@@ -128,6 +142,10 @@ def show_frame(frame):
 def close_camera():
     global picam2
     if picam2:
-        picam2.stop()
+        try: 
+            picam2.stop()
+            picam2.close()
+        finally:
+            picam2 = None
     cv2.destroyAllWindows()
 

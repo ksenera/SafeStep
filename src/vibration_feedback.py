@@ -7,16 +7,13 @@
 from gpiozero import DigitalOutputDevice
 import time
 import asyncio
+import config
 
 DEVICE_LIST = []
 
 VIBRATOR_DURATIONS = []
 
-defaultPinList = [
-    18,
-    24,
-    25
-]
+defaultPinList = config.default_pin_list
 
 
 
@@ -101,8 +98,8 @@ def error_pulse(gpio_pin1, gpio_pin2, gpio_pin3):
 """
 
 async def timed_vibrator_pulse (timespan: int, deviceList: list[DigitalOutputDevice]) -> None:
-    high = 1.6
-    low = 0.1
+    high = config.max_vibration_time
+    low = config.min_vibration_time
     
     if timespan > high:
         timespan = high

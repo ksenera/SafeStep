@@ -1,12 +1,12 @@
 import serial
 from time import sleep
+from datetime import timedelta, datetime
+import config
 
-default_uart = serial.Serial("/dev/serial0")
+default_uart = serial.Serial(config.uart_port)
 default_uart.reset_input_buffer()
 default_uart.reset_output_buffer()
-
 print(default_uart.is_open)
-
 def sendUARTMsg(message: str, uart: serial.Serial = default_uart):
     # Add the newline as a signal for the end of message
     msg = message + "\n"
@@ -36,6 +36,15 @@ def getDistanceData(uart: serial.Serial = default_uart) -> list | None:
         data = [int(x) for x in data]
 
     return data
+
+def parseObjMsg(message: str):
+    return message.split(",")
+
+def tmp(message: str, obj_dictionary: dict):
+    current_time = datetime.now()
+    # If word not in dict OR if it exists but enough seconds have passed
+    if message not in obj_dictionary or current_time > (obj_dictionary[message] + timedelta(seconds=3)):
+        obj_dictionary[message] = current_time
 
 if __name__ == "__main__":
     while True:
