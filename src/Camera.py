@@ -11,7 +11,7 @@ import config
 
 # Initialize the camera object
 from picamera2 import Picamera2, Preview
-from src.thread_workers import THREAD_KILL
+import thread_workers 
 
 # config
 
@@ -121,7 +121,7 @@ def draw_boxes(frame, detections):
 """
 def show_frame(frame):
     # check here if OpenCV windows hangs critial check
-    if THREAD_KILL.is_set():
+    if thread_workers.THREAD_KILL.is_set():
         return True
     
     cv2.imshow("livestream", frame)
