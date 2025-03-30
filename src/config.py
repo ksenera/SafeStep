@@ -10,7 +10,7 @@ max_vibration_time = 1.5
 
 thread_delay = 0.1
 
-model_name = "efficientdet.flite"
+model_name = "efficientdet.tflite"
 
 inner_range = 500
 
