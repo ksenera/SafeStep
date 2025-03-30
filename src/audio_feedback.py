@@ -4,8 +4,6 @@ import time
 import pyttsx3
 import subprocess
 
-
-
 # AUDIO_QUEUE = queue.Queue(maxsize=1)
 
 # def pushAudioMessage(message: str):
