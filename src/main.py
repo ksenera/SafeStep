@@ -1,5 +1,5 @@
 import signal
-from thread_workers import THREAD_KILL, initialize_all, handleCamera, handleTOF, handleAudioFeedback, handleVibrationalFeedback
+from thread_workers import THREAD_KILL, initialize_all, handleTOF, handleAudioFeedback, handleVibrationalFeedback
 import threading
 import asyncio
 

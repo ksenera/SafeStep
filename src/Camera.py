@@ -7,7 +7,7 @@ from mediapipe.tasks.python import vision
 import cv2
 import numpy as np
 import time
-import config 
+import config
 
 # Initialize the camera object
 from picamera2 import Picamera2, Preview
