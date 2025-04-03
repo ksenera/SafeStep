@@ -13,6 +13,7 @@ import config
 from picamera2 import Picamera2, Preview
 import thread_workers 
 
+
 # config
 
 picam2 = None
