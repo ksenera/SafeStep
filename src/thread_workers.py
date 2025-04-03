@@ -202,7 +202,7 @@ def handleObjectDetails(detected_objects, local_sensor_distance, frame, outer_ra
     # get the width of the frame for position calculations
     frame_width = frame.shape[1]
 
-    # loop through all detected objects and get message 
+    # loop through all detected objects and get message  
     for obj in detected_objects:
         message = processObjectPosition(obj, local_sensor_distance, frame_width, outer_range)
         if not message:
