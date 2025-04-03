@@ -25,4 +25,4 @@ outer_range = 3000
 
 uart_port = "/dev/serial0"
 # in seconds
-message_repeat_delay = 2
+message_repeat_delay = 5

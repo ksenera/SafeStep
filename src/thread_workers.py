@@ -89,21 +89,12 @@ async def handleVibrationalFeedback():
 
 
 def handleAudioFeedback():
-    msg_list = []
     while not THREAD_KILL.is_set():
         msg = ucomm.readUARTMsg()
         if not msg:
             continue
-
-        while msg:
-            msg_list.append(msg)
-            msg = ucomm.readUARTMsg()
-
-        dt = datetime.now()
-        while dt < datetime.now() + timedelta(seconds=config.message_repeat_delay) and len(msg_list) > 0:
-            print(msg_list)
-            speak(msg_list.pop())
-        msg_list.clear()
+        print(msg)
+        speak(msg)
 
 
 """

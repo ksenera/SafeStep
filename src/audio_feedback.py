@@ -17,8 +17,7 @@ import subprocess
 #     return AUDIO_QUEUE.get()
 
 def speak(text: str):
-    duration_stretch = 0.6
-    subprocess.run(["flite", "-voice", "rms", "-t", text, "-s", f'duration_stretch={duration_stretch}'])
+    subprocess.run(["flite", "-voice", "rms", "-t", text])
 
 
 # engine = pyttsx3.init()
