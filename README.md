@@ -5,6 +5,8 @@
 
 → [Demo Video](https://www.youtube.com/watch?v=gDOYePSF9GM)
 
+→ [Brochure](https://setprojectday.ca/safestep.pdf)
+
 Navigating everyday environments can be challenging for visually impaired individuals. Traditional methods, such as relying on sighted guides, white canes, or service dogs, aren't always accessible, affordable, or convenient. Recognizing this challenge inspired us to develop SafeStep, a wearable device designed to enhance independence for visually impaired users.
 
 SafeStep uses advanced sensors to detect obstacles and identify people or objects nearby, providing real-time feedback to help users safely move around. With clear audio cues describing what's in front of you, paired with subtle vibrations indicating the distance of obstacles, SafeStep makes avoiding collisions simple and intuitive. Lightweight, affordable, and easy to use, SafeStep integrates seamlessly with existing navigation techniques or can serve as a standalone aid, empowering you to confidently navigate crowds, indoor spaces, or unfamiliar locations with ease.
