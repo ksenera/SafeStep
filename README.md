@@ -1,5 +1,7 @@
 # SafeStep 🥇
 **1st Place — Conestoga Waterloo Campus SET Showcase 2025**
+→ [SET Project Blurb](https://setprojectday.ca/post/2025/safestep/)
+→ [Demo Video](https://www.youtube.com/watch?v=gDOYePSF9GM)
 
 Navigating everyday environments can be challenging for visually impaired individuals. Traditional methods, such as relying on sighted guides, white canes, or service dogs, aren't always accessible, affordable, or convenient. Recognizing this challenge inspired us to develop SafeStep, a wearable device designed to enhance independence for visually impaired users.
 
